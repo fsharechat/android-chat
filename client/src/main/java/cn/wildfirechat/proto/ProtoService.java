@@ -18,6 +18,7 @@ import java.util.List;
 
 import cn.wildfirechat.proto.handler.ConnectAckMessageHandler;
 import cn.wildfirechat.proto.handler.MessageHandler;
+import cn.wildfirechat.proto.handler.PublishAckMessageHandler;
 import cn.wildfirechat.proto.model.ConnectMessage;
 
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusConnected;
@@ -44,6 +45,7 @@ public class ProtoService implements PushMessageCallback {
 
     private void initHandlers(){
         messageHandlers.add(new ConnectAckMessageHandler());
+        messageHandlers.add(new PublishAckMessageHandler());
     }
 
     public void setUserName(String userName){
@@ -95,10 +97,23 @@ public class ProtoService implements PushMessageCallback {
         connectMessage.setPassword(Base64.encode(pwdAES));
         connectMessage.setClientIdentifier(PreferenceManager.getDefaultSharedPreferences(context).getString("mars_core_uid", ""));
         Log.i(TAG,"send connectMessage "+JSON.toJSONString(connectMessage));
-        androidNIOClient.sendMessage(Signal.CONNECT, JSON.toJSONString(connectMessage), new CompletedCallback() {
+        sendMessage(Signal.CONNECT,SubSignal.NONE, JSON.toJSONString(connectMessage).getBytes());
+    }
+
+    private void sendMessage(Signal signal,SubSignal subSignal,byte[] message){
+        androidNIOClient.sendMessage(signal, subSignal, message, new CompletedCallback() {
             @Override
-            public void onCompleted(Exception ex) {
+            public void onCompleted(Exception e) {
             }
         });
+    }
+
+    public void searchUser(String keyword, JavaProtoLogic.ISearchUserCallback callback){
+        WFCMessage.SearchUserRequest request = WFCMessage.SearchUserRequest.newBuilder()
+                .setKeyword(keyword)
+                .setFuzzy(1)
+                .setPage(0)
+                .build();
+        sendMessage(Signal.PUBLISH,SubSignal.US,request.toByteArray());
     }
 }

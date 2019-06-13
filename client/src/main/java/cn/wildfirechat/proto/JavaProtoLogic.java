@@ -341,7 +341,9 @@ public class JavaProtoLogic {
 
     public static void setConversationSilent(int conversationType, String target, int line, boolean silent){}
 
-    public static void searchUser(String keyword, JavaProtoLogic.ISearchUserCallback callback){}
+    public static void searchUser(String keyword, JavaProtoLogic.ISearchUserCallback callback){
+        protoService.searchUser(keyword,callback);
+    }
 
     //- (BOOL)isMyFriend:(NSString *)userId
     public static boolean isMyFriend(String userId){
