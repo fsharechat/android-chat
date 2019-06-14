@@ -218,7 +218,7 @@ public class ClientService extends Service implements
 //                [self destroyMars];
 //            }
 
-            JavaProtoLogic.disconnect(clearSession ? 8 : 0);
+            JavaProtoLogic.disconnect(clearSession ? 1 : 0);
 
             resetProto();
         }

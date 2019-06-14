@@ -137,4 +137,10 @@ public class ProtoService implements PushMessageCallback {
                 .build();
         sendMessage(Signal.PUBLISH,SubSignal.US,request.toByteArray(),callback);
     }
+
+    public void disConnect(int clearSession){
+        byte[] body = new byte[1];
+        body[0] = (byte) clearSession;
+        sendMessage(Signal.DISCONNECT,SubSignal.NONE,body,null);
+    }
 }

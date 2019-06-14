@@ -266,7 +266,7 @@ public class JavaProtoLogic {
     }
 
     public static void disconnect(int flag){
-
+        protoService.disConnect(flag);
     }
 
     public static int getConnectionStatus(){
