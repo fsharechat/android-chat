@@ -417,9 +417,8 @@ public class JavaProtoLogic {
 //    error:(void(^)(int error_code))errorBlock;
     public static void setBlackList(String userId, boolean isBlackListed, JavaProtoLogic.IGeneralCallback callback){}
 
-    //- (WFCCUserInfo *)getUserInfo:(NSString *)userId refresh:(BOOL)refresh
     public static ProtoUserInfo getUserInfo(String userId, String groupId, boolean refresh){
-        return new ProtoUserInfo();
+        return protoService.getUserInfo(userId,groupId,refresh);
     }
     public static ProtoUserInfo[] getUserInfos(String[] userIds, String groupId){
         return new ProtoUserInfo[0];

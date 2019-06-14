@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSON;
 import com.comsince.github.client.AndroidNIOClient;
 import com.comsince.github.client.PushMessageCallback;
 import com.comsince.github.core.ByteBufferList;
+import com.comsince.github.core.future.SimpleFuture;
 import com.comsince.github.logger.Log;
 import com.comsince.github.logger.LoggerFactory;
 import com.comsince.github.push.Header;
@@ -21,7 +22,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import cn.wildfirechat.model.ProtoUserInfo;
 import cn.wildfirechat.proto.handler.ConnectAckMessageHandler;
+import cn.wildfirechat.proto.handler.GetUserInfoMessageHanlder;
 import cn.wildfirechat.proto.handler.MessageHandler;
 import cn.wildfirechat.proto.handler.RequestInfo;
 import cn.wildfirechat.proto.handler.SearchUserResultMessageHandler;
@@ -39,6 +42,7 @@ public class ProtoService implements PushMessageCallback {
 
     private List<MessageHandler> messageHandlers = new ArrayList<>();
     public ConcurrentHashMap<Integer, RequestInfo> requestMap = new ConcurrentHashMap<>();
+    public ConcurrentHashMap<Integer, SimpleFuture> futureMap = new ConcurrentHashMap<>();
     public ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
     public ProtoService(){
@@ -54,6 +58,7 @@ public class ProtoService implements PushMessageCallback {
     private void initHandlers(){
         messageHandlers.add(new ConnectAckMessageHandler());
         messageHandlers.add(new SearchUserResultMessageHandler(this));
+        messageHandlers.add(new GetUserInfoMessageHanlder(this));
     }
 
     public void setUserName(String userName){
@@ -126,7 +131,20 @@ public class ProtoService implements PushMessageCallback {
                 PreferenceManager.getDefaultSharedPreferences(context).edit().putInt("message_id",++messageId).apply();
             }
         });
+    }
 
+    private SimpleFuture sendMessageSync(Signal signal,SubSignal subSignal,byte[] message){
+        SimpleFuture simpleFuture = new SimpleFuture();
+        scheduledExecutorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                int messageId = PreferenceManager.getDefaultSharedPreferences(context).getInt("message_id",0);
+                androidNIOClient.sendMessage(signal, subSignal,messageId, message);
+                futureMap.put(messageId,simpleFuture);
+                PreferenceManager.getDefaultSharedPreferences(context).edit().putInt("message_id",++messageId).apply();
+            }
+        });
+        return simpleFuture;
     }
 
     public void searchUser(String keyword, JavaProtoLogic.ISearchUserCallback callback){
@@ -142,5 +160,19 @@ public class ProtoService implements PushMessageCallback {
         byte[] body = new byte[1];
         body[0] = (byte) clearSession;
         sendMessage(Signal.DISCONNECT,SubSignal.NONE,body,null);
+        scheduledExecutorService.shutdown();
+    }
+
+    public ProtoUserInfo getUserInfo(String userId, String groupId, boolean refresh){
+        WFCMessage.PullUserRequest request = WFCMessage.PullUserRequest.newBuilder()
+                .addRequest(WFCMessage.UserRequest.newBuilder().setUid(userId).build())
+                .build();
+        SimpleFuture<ProtoUserInfo> simpleFuture = sendMessageSync(Signal.PUBLISH,SubSignal.UPUI,request.toByteArray());
+        try {
+            return simpleFuture.get(200,TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            log.e("getuserinfo error ",e);
+            return null;
+        }
     }
 }

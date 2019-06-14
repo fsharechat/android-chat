@@ -13,12 +13,11 @@ import cn.wildfirechat.proto.JavaProtoLogic;
 import cn.wildfirechat.proto.ProtoService;
 import cn.wildfirechat.proto.WFCMessage;
 
-public class SearchUserResultMessageHandler implements MessageHandler{
+public class SearchUserResultMessageHandler extends AbstractMessagHandler{
     private static final Log log  = LoggerFactory.getLogger(SearchUserResultMessageHandler.class);
-    ProtoService protoService;
 
     public SearchUserResultMessageHandler(ProtoService protoService) {
-        this.protoService = protoService;
+        super(protoService);
     }
 
     @Override
@@ -51,13 +50,10 @@ public class SearchUserResultMessageHandler implements MessageHandler{
         for(int i = 0;i<searchUserResult.getEntryCount();i++){
             WFCMessage.User user = searchUserResult.getEntry(i);
             log.i("user "+user.getDisplayName());
-            ProtoUserInfo protoUserInfo = new ProtoUserInfo();
-            protoUserInfo.setUid(user.getUid());
-            protoUserInfo.setEmail(user.getEmail());
-            protoUserInfo.setDisplayName(user.getDisplayName());
-            protoUserInfo.setMobile(user.getMobile());
-            protoUserInfos[i] = protoUserInfo;
+            protoUserInfos[i] = convertUser(user);
         }
         return protoUserInfos;
     }
+
+
 }
