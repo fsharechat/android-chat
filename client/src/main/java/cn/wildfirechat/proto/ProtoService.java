@@ -1,13 +1,14 @@
 package cn.wildfirechat.proto;
 
 import android.preference.PreferenceManager;
-import android.util.Log;
 
 import com.alibaba.fastjson.JSON;
 import com.comsince.github.client.AndroidNIOClient;
 import com.comsince.github.client.PushMessageCallback;
 import com.comsince.github.core.ByteBufferList;
-import com.comsince.github.core.callback.CompletedCallback;
+import com.comsince.github.logger.Log;
+import com.comsince.github.logger.LoggerFactory;
+import com.comsince.github.push.Header;
 import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
 import com.comsince.github.push.util.AES;
@@ -15,10 +16,15 @@ import com.comsince.github.push.util.Base64;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import cn.wildfirechat.proto.handler.ConnectAckMessageHandler;
 import cn.wildfirechat.proto.handler.MessageHandler;
-import cn.wildfirechat.proto.handler.PublishAckMessageHandler;
+import cn.wildfirechat.proto.handler.RequestInfo;
+import cn.wildfirechat.proto.handler.SearchUserResultMessageHandler;
 import cn.wildfirechat.proto.model.ConnectMessage;
 
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusConnected;
@@ -26,12 +32,14 @@ import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusUnconnecte
 import static com.tencent.mars.comm.PlatformComm.context;
 
 public class ProtoService implements PushMessageCallback {
-    private static String TAG = "ProtoService";
+    private static Log log = LoggerFactory.getLogger(ProtoService.class);
     private String userName;
     private String token;
     private AndroidNIOClient androidNIOClient;
 
     private List<MessageHandler> messageHandlers = new ArrayList<>();
+    public ConcurrentHashMap<Integer, RequestInfo> requestMap = new ConcurrentHashMap<>();
+    public ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
     public ProtoService(){
         initHandlers();
@@ -45,7 +53,7 @@ public class ProtoService implements PushMessageCallback {
 
     private void initHandlers(){
         messageHandlers.add(new ConnectAckMessageHandler());
-        messageHandlers.add(new PublishAckMessageHandler());
+        messageHandlers.add(new SearchUserResultMessageHandler(this));
     }
 
     public void setUserName(String userName){
@@ -58,10 +66,10 @@ public class ProtoService implements PushMessageCallback {
 
 
     @Override
-    public void receiveMessage(Signal signal, SubSignal subSignal, ByteBufferList byteBufferList) {
+    public void receiveMessage(Header header, ByteBufferList byteBufferList) {
          for(MessageHandler messageHandler : messageHandlers){
-             if(messageHandler.match(signal)){
-                 messageHandler.processMessage(signal,subSignal,byteBufferList);
+             if(messageHandler.match(header)){
+                 messageHandler.processMessage(header,byteBufferList);
                  break;
              }
          }
@@ -76,6 +84,12 @@ public class ProtoService implements PushMessageCallback {
     public void onConnected() {
        JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnected);
        sendConnectMessage();
+       scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+           @Override
+           public void run() {
+                androidNIOClient.heart(50*1000);
+           }
+       },10,30, TimeUnit.SECONDS);
     }
 
     private void sendConnectMessage(){
@@ -85,27 +99,34 @@ public class ProtoService implements PushMessageCallback {
         byte[] aesToken = AES.AESDecrypt(byteToken,"",true);
         String allToken = new String(aesToken);
 
-        Log.i(TAG,"all token is "+allToken);
-
         String pwd = allToken.substring(0,allToken.indexOf("|"));
         allToken = allToken.substring(allToken.indexOf("|")+1);
         String secret = allToken.substring(0,allToken.indexOf("|"));
-        Log.i(TAG,"pwd->"+pwd+ " secret-> "+secret);
+        log.i("pwd->"+pwd+ " secret-> "+secret);
         //利用secret加密pwd
         byte[] pwdAES = AES.AESEncrypt(Base64.decode(pwd),secret);
-        Log.i(TAG,"base64 pwd encrypt->"+Base64.encode(pwdAES));
+        log.i("base64 pwd encrypt->"+Base64.encode(pwdAES));
         connectMessage.setPassword(Base64.encode(pwdAES));
         connectMessage.setClientIdentifier(PreferenceManager.getDefaultSharedPreferences(context).getString("mars_core_uid", ""));
-        Log.i(TAG,"send connectMessage "+JSON.toJSONString(connectMessage));
-        sendMessage(Signal.CONNECT,SubSignal.NONE, JSON.toJSONString(connectMessage).getBytes());
+        log.i("send connectMessage "+JSON.toJSONString(connectMessage));
+        sendMessage(Signal.CONNECT,SubSignal.NONE, JSON.toJSONString(connectMessage).getBytes(),null);
     }
 
-    private void sendMessage(Signal signal,SubSignal subSignal,byte[] message){
-        androidNIOClient.sendMessage(signal, subSignal, message, new CompletedCallback() {
+    private void sendMessage(Signal signal,SubSignal subSignal,byte[] message,Object callback){
+        scheduledExecutorService.execute(new Runnable() {
             @Override
-            public void onCompleted(Exception e) {
+            public void run() {
+                int messageId = PreferenceManager.getDefaultSharedPreferences(context).getInt("message_id",0);
+                log.i("send message id "+messageId + callback);
+                androidNIOClient.sendMessage(signal, subSignal,messageId, message);
+                if(callback != null){
+                    RequestInfo requestInfo = new RequestInfo(signal,subSignal,callback.getClass(),callback);
+                    requestMap.put(messageId,requestInfo);
+                }
+                PreferenceManager.getDefaultSharedPreferences(context).edit().putInt("message_id",++messageId).apply();
             }
         });
+
     }
 
     public void searchUser(String keyword, JavaProtoLogic.ISearchUserCallback callback){
@@ -114,6 +135,6 @@ public class ProtoService implements PushMessageCallback {
                 .setFuzzy(1)
                 .setPage(0)
                 .build();
-        sendMessage(Signal.PUBLISH,SubSignal.US,request.toByteArray());
+        sendMessage(Signal.PUBLISH,SubSignal.US,request.toByteArray(),callback);
     }
 }

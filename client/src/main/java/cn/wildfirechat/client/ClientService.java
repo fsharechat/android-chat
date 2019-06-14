@@ -15,6 +15,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.comsince.github.logger.LoggerFactory;
 import com.tencent.mars.Mars;
 import com.tencent.mars.app.AppLogic;
 
@@ -83,7 +84,9 @@ import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoUserInfo;
 import cn.wildfirechat.model.UnreadCount;
 import cn.wildfirechat.model.UserInfo;
+import cn.wildfirechat.proto.AndroidLogger;
 import cn.wildfirechat.proto.JavaProtoLogic;
+import cn.wildfirechat.proto.ProtoService;
 import cn.wildfirechat.remote.RecoverReceiver;
 
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusConnected;
@@ -1650,7 +1653,7 @@ public class ClientService extends Service implements
     @Override
     public void onCreate() {
         super.onCreate();
-
+         LoggerFactory.setLoggger(new AndroidLogger(ProtoService.class));
         // Initialize the Mars PlatformComm
         handler = new Handler(Looper.getMainLooper());
         JavaProtoLogic.init();

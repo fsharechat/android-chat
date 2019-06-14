@@ -1,10 +1,9 @@
 package cn.wildfirechat.proto.handler;
 
 import com.comsince.github.core.ByteBufferList;
-import com.comsince.github.push.Signal;
-import com.comsince.github.push.SubSignal;
+import com.comsince.github.push.Header;
 
 public interface MessageHandler {
-    boolean match(Signal signal);
-    void processMessage(Signal signal, SubSignal subSignal, ByteBufferList byteBufferList);
+    boolean match(Header header);
+    void processMessage(Header header, ByteBufferList byteBufferList);
 }
