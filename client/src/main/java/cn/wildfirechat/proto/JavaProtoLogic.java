@@ -274,7 +274,7 @@ public class JavaProtoLogic {
     }
 
     public static void sendMessage(ProtoMessage msg, int expireDuration, JavaProtoLogic.ISendMessageCallback callback){
-
+        protoService.sendMessage(msg,expireDuration,callback);
     }
 
     public static void recallMessage(long messageUid, JavaProtoLogic.IGeneralCallback callback){
@@ -302,11 +302,11 @@ public class JavaProtoLogic {
     }
 
     public static  ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser){
-        return new ProtoMessage[0];
+        return protoService.getMessages(conversationType,target,line,fromIndex,before,count,withUser);
     }
 
     public static void getRemoteMessages(int conversationType, String target, int line, long beforeMessageUid, int count, JavaProtoLogic.ILoadRemoteMessagesCallback callback){
-
+        protoService.getRemoteMessages(conversationType,target,line,beforeMessageUid,count,callback);
     }
 
     public static  ProtoMessage getMessage(long messageId){
@@ -345,14 +345,13 @@ public class JavaProtoLogic {
         protoService.searchUser(keyword,callback);
     }
 
-    //- (BOOL)isMyFriend:(NSString *)userId
+
     public static boolean isMyFriend(String userId){
-        return false;
+        return protoService.isMyFriend(userId);
     }
 
-    //- (NSArray<NSString *> *)getMyFriendList:(BOOL)refresh
     public static String[] getMyFriendList(boolean refresh){
-        return new String[0];
+        return protoService.getMyFriendList(refresh);
     }
 
     public static String getFriendAlias(String userId){
@@ -366,15 +365,14 @@ public class JavaProtoLogic {
 
     //- (NSArray<WFCCFriendRequest *> *)getIncommingFriendRequest
     public static ProtoFriendRequest[] getFriendRequest(boolean incomming){
-        return new ProtoFriendRequest[0];
+        return protoService.getFriendRequest(incomming);
     }
 
     //- (void)clearUnreadFriendRequestStatus
     public static void clearUnreadFriendRequestStatus(){}
 
-    //- (int)getUnreadFriendRequestStatus
     public static int getUnreadFriendRequestStatus(){
-        return 0;
+        return protoService.getUnreadFriendRequestStatus();
     }
 
     //- (void)removeFriend:(NSString *)userId
@@ -382,18 +380,16 @@ public class JavaProtoLogic {
     //error:(void(^)(int error_code))errorBlock
     public static void removeFriend(String userId, JavaProtoLogic.IGeneralCallback callback){}
 
-    //- (void)sendFriendRequest:(NSString *)userId
-    //                   reason:(NSString *)reason
-    //                  success:(void(^)())successBlock
-    //                    error:(void(^)(int error_code))errorBlock {
-    public static void sendFriendRequest(String userId, String reason, JavaProtoLogic.IGeneralCallback callback){}
+
+    public static void sendFriendRequest(String userId, String reason, JavaProtoLogic.IGeneralCallback callback){
+        protoService.sendFriendRequest(userId,reason,callback);
+    }
 
 
-    //- (void)handleFriendRequest:(NSString *)userId
-    //                     accept:(BOOL)accpet
-    //                    success:(void(^)())successBlock
-    //                      error:(void(^)(int error_code))errorBlock {
-    public static void handleFriendRequest(String userId, boolean accept, JavaProtoLogic.IGeneralCallback callback){}
+
+    public static void handleFriendRequest(String userId, boolean accept, JavaProtoLogic.IGeneralCallback callback){
+        protoService.handleFriendRequest(userId,accept,callback);
+    }
 
     //- (void)deleteFriend:(NSString *)userId
     //             success:(void(^)())successBlock
