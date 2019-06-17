@@ -57,7 +57,8 @@ public abstract class AbstractMessagHandler implements MessageHandler{
     public static WFCMessage.Message convertWFCMessage(ProtoMessage messageResponse){
         WFCMessage.Message.Builder builder = WFCMessage.Message.newBuilder();
         ProtoService.log.i("fromuser "+messageResponse.getFrom()+" target "+messageResponse.getTarget() +
-                " content type "+messageResponse.getContent().getType()+" tos "+messageResponse.getTos()+"direct "+messageResponse.getDirection());
+                " content type "+messageResponse.getContent().getType()+" tos "+messageResponse.getTos()+"direct "+messageResponse.getDirection()
+        + "status "+messageResponse.getStatus());
         builder.setFromUser(messageResponse.getFrom());
         WFCMessage.Conversation conversation = WFCMessage.Conversation.newBuilder()
                 .setType(messageResponse.getConversationType())

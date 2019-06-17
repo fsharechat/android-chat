@@ -255,6 +255,7 @@ public class ConversationListViewModel extends ViewModel implements OnReceiveMes
      * @param conversationInfo
      */
     public void clearConversationUnreadStatus(ConversationInfo conversationInfo) {
+        Log.e("conversationlist",conversationInfo.conversation.target);
         UnreadCount unreadCount = conversationInfo.unreadCount;
         if (unreadCount.unread == 0 && unreadCount.unreadMentionAll == 0 && unreadCount.unreadMention == 0) {
             return;

@@ -1,5 +1,7 @@
 package cn.wildfirechat.proto.handler;
 
+import android.text.TextUtils;
+
 import com.comsince.github.core.ByteBufferList;
 import com.comsince.github.core.future.SimpleFuture;
 import com.comsince.github.push.Header;
@@ -48,6 +50,15 @@ public class ReceiveMessageHandler extends AbstractMessagHandler {
                     }
 
                     protoMessageMap.put(protoMessages[i].getTarget(),protoMessages[i]);
+                    ProtoService.log.i("receive promessage "+protoMessages[i].getTarget());
+                    if(!TextUtils.isEmpty(protoMessages[i].getContent().getPushContent()) ||
+                    !TextUtils.isEmpty(protoMessages[i].getContent().getSearchableContent()) && protoService.futureMap.get(header.getMessageId()) == null){
+                        int unReadCount = 0;
+                        if(JavaProtoLogic.unReadCountMap.get(protoMessages[i].getTarget()) != null){
+                            unReadCount = JavaProtoLogic.unReadCountMap.get(protoMessages[i].getTarget());
+                        }
+                        JavaProtoLogic.unReadCountMap.put(protoMessages[i].getTarget(),++unReadCount);
+                    }
                 }
                 SimpleFuture<ProtoMessage[]> pullMessageFutrue = protoService.futureMap.remove(header.getMessageId());
                 if(pullMessageFutrue != null){

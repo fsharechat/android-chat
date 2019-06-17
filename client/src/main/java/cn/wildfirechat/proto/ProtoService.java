@@ -274,7 +274,16 @@ public class ProtoService implements PushMessageCallback {
                 .build();
         SimpleFuture<ProtoMessage[]> pullMessageFuture = sendMessageSync(Signal.PUBLISH,SubSignal.MP,pullMessageRequest.toByteArray());
         try {
-            return pullMessageFuture.get(500,TimeUnit.MILLISECONDS);
+            ProtoMessage[] protoMessages = pullMessageFuture.get(500,TimeUnit.MILLISECONDS);
+            List<ProtoMessage> protoMessageList = new ArrayList<>();
+            for(ProtoMessage message: protoMessages){
+                if(message.getTarget().equals(target)){
+                    protoMessageList.add(message);
+                }
+            }
+            ProtoMessage[] result = new ProtoMessage[protoMessageList.size()];
+            protoMessageList.toArray(result);
+            return result;
         } catch (Exception e) {
             e.printStackTrace();
         }

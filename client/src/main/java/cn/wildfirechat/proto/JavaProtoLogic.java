@@ -1,8 +1,12 @@
 package cn.wildfirechat.proto;
+import android.text.TextUtils;
+
+import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import cn.wildfirechat.model.Conversation;
 import cn.wildfirechat.model.ProtoChannelInfo;
@@ -296,6 +300,8 @@ public class JavaProtoLogic {
         return 0;
     }
 
+    public static Map<String,Integer> unReadCountMap = new ConcurrentHashMap<>();
+
     public static  ProtoConversationInfo[] getConversations(int[] conversationTypes, int[] lines){
         String[] friendList = protoService.getMyFriendList(true);
         if(friendList != null){
@@ -307,27 +313,32 @@ public class JavaProtoLogic {
                 protoConversationInfo.setLine(0);
                 protoConversationInfo.setTarget(friend);
                 ProtoMessage protoMessage = ReceiveMessageHandler.protoMessageMap.get(friend);
-                if(protoMessage != null){
+                if(protoMessage != null &&(!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
+                || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent())) ){
                     protoMessage.setStatus(5);
                 }
                 protoConversationInfo.setLastMessage(protoMessage);
+
                 ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
-                protoUnreadCount.setUnread(1);
+                protoUnreadCount.setUnread(unReadCountMap.get(friend)!=null ?unReadCountMap.get(friend):0);
+                ProtoService.log.i("friend "+friend+" unread "+unReadCountMap.get(friend));
                 protoConversationInfo.setUnreadCount(protoUnreadCount);
                 protoConversationInfo.setTimestamp(System.currentTimeMillis());
                 protoConversationInfos[i++] =protoConversationInfo;
             }
             return protoConversationInfos;
         }
-        return null;
+        return new ProtoConversationInfo[0];
 
     }
 
     public static  ProtoConversationInfo getConversation(int conversationType, String target, int line){
         ProtoConversationInfo[] protoConversationInfos = getConversations(null,null);
-        for(ProtoConversationInfo protoConversationInfo : protoConversationInfos){
-            if(protoConversationInfo.getTarget().equals(target)){
-                return protoConversationInfo;
+        if(protoConversationInfos != null){
+            for(ProtoConversationInfo protoConversationInfo : protoConversationInfos){
+                if(protoConversationInfo.getTarget().equals(target)){
+                    return protoConversationInfo;
+                }
             }
         }
         return new ProtoConversationInfo();
@@ -350,14 +361,18 @@ public class JavaProtoLogic {
     }
 
     public static ProtoUnreadCount getUnreadCount(int conversationType, String target, int line){
-        return new ProtoUnreadCount();
+        ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
+        protoUnreadCount.setUnread(1);
+        return protoUnreadCount;
     }
 
     public static ProtoUnreadCount getUnreadCountEx(int[] conversationTypes, int[] lines){
         return new ProtoUnreadCount();
     }
 
-    public static void clearUnreadStatus(int conversationType, String target, int line){}
+    public static void clearUnreadStatus(int conversationType, String target, int line){
+        unReadCountMap.put(target,0);
+    }
 
     public static void clearAllUnreadStatus(){}
 
