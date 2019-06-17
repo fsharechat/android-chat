@@ -241,22 +241,22 @@ public class ClientService extends Service implements
 
         @Override
         public void registerMessageContent(String msgContentCls) throws RemoteException {
-//            try {
-//                Class cls = Class.forName(msgContentCls);
-//                ContentTag tag = (ContentTag) cls.getAnnotation(ContentTag.class);
-//                if (tag != null) {
-//                    Class curClazz = contentMapper.get(tag.type());
-//                    if (curClazz != null && !curClazz.equals(cls)) {
-//                        throw new IllegalArgumentException("messageContent type duplicate");
-//                    }
-//                    contentMapper.put(tag.type(), cls);
-//                    JavaProtoLogic.registerMessageFlag(tag.type(), tag.flag().getValue());
-//                } else {
-//                    throw new IllegalStateException("ContentTag annotation must be set!");
-//                }
-//            } catch (ClassNotFoundException e) {
-//                e.printStackTrace();
-//            }
+            try {
+                Class cls = Class.forName(msgContentCls);
+                ContentTag tag = (ContentTag) cls.getAnnotation(ContentTag.class);
+                if (tag != null) {
+                    Class curClazz = contentMapper.get(tag.type());
+                    if (curClazz != null && !curClazz.equals(cls)) {
+                        throw new IllegalArgumentException("messageContent type duplicate");
+                    }
+                    contentMapper.put(tag.type(), cls);
+                    JavaProtoLogic.registerMessageFlag(tag.type(), tag.flag().getValue());
+                } else {
+                    throw new IllegalStateException("ContentTag annotation must be set!");
+                }
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
         }
 
         private ProtoMessage convertMessage(cn.wildfirechat.message.Message msg) {

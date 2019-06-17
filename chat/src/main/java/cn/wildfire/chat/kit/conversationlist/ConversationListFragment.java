@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.SimpleItemAnimator;
 import java.util.Arrays;
 import java.util.List;
 
+import cn.wildfire.chat.kit.ChatManagerHolder;
 import cn.wildfire.chat.kit.IMServiceStatusViewModel;
 import cn.wildfire.chat.kit.WfcUIKit;
 import cn.wildfire.chat.kit.conversationlist.notification.ConnectionStatusNotification;

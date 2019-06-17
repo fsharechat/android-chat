@@ -19,13 +19,16 @@ import com.comsince.github.push.util.Base64;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import cn.wildfirechat.model.ProtoFriendRequest;
 import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoUserInfo;
+import cn.wildfirechat.proto.handler.AbstractMessagHandler;
 import cn.wildfirechat.proto.handler.AddFriendRequestHandler;
 import cn.wildfirechat.proto.handler.ConnectAckMessageHandler;
 import cn.wildfirechat.proto.handler.FriendPullHandler;
@@ -42,6 +45,7 @@ import cn.wildfirechat.proto.handler.SendMessageHandler;
 import cn.wildfirechat.proto.model.ConnectMessage;
 
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusConnected;
+import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusConnecting;
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusUnconnected;
 import static com.tencent.mars.comm.PlatformComm.context;
 
@@ -104,6 +108,13 @@ public class ProtoService implements PushMessageCallback {
     @Override
     public void receiveException(Exception e) {
         JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusUnconnected);
+        scheduledExecutorService.schedule(new Runnable() {
+            @Override
+            public void run() {
+                JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnecting);
+                androidNIOClient.connect();
+            }
+        },10,TimeUnit.SECONDS);
     }
 
     @Override
@@ -215,7 +226,7 @@ public class ProtoService implements PushMessageCallback {
     }
 
     public ProtoFriendRequest[] getFriendRequest(boolean incomming) {
-        WFCMessage.Version version = WFCMessage.Version.newBuilder().setVersion(0).build();
+        WFCMessage.Version version = WFCMessage.Version.newBuilder().setVersion(System.currentTimeMillis() - 10 * 60 * 1000).build();
         SimpleFuture<ProtoFriendRequest[]> friendRequestFuture = sendMessageSync(Signal.PUBLISH,SubSignal.FRP,version.toByteArray());
         try {
             return friendRequestFuture.get(200,TimeUnit.MILLISECONDS);
@@ -236,7 +247,7 @@ public class ProtoService implements PushMessageCallback {
         WFCMessage.Version request = WFCMessage.Version.newBuilder().setVersion(0).build();
         SimpleFuture<String[]> friendListFuture = sendMessageSync(Signal.PUBLISH,SubSignal.FP,request.toByteArray());
         try {
-            myFriendList = friendListFuture.get(200,TimeUnit.MILLISECONDS);
+            myFriendList = friendListFuture.get(500,TimeUnit.MILLISECONDS);
             return myFriendList;
         } catch (Exception e) {
             return null;
@@ -254,7 +265,19 @@ public class ProtoService implements PushMessageCallback {
         return false;
     }
 
+    public long startMessageId = 0;
     public ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser){
+        log.i("conversationType "+conversationType+" target "+target+" line "+line +" fromIndex "+fromIndex +" before "+before +" count "+" messageId "+startMessageId);
+        WFCMessage.PullMessageRequest pullMessageRequest = WFCMessage.PullMessageRequest.newBuilder()
+                .setId(startMessageId)
+                .setType(conversationType)
+                .build();
+        SimpleFuture<ProtoMessage[]> pullMessageFuture = sendMessageSync(Signal.PUBLISH,SubSignal.MP,pullMessageRequest.toByteArray());
+        try {
+            return pullMessageFuture.get(500,TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return new ProtoMessage[0];
     }
 
@@ -263,7 +286,7 @@ public class ProtoService implements PushMessageCallback {
     }
 
     public void sendMessage(ProtoMessage msg, int expireDuration, JavaProtoLogic.ISendMessageCallback callback){
-        WFCMessage.Message sendMessage = convertWFCMessage(msg);
+        WFCMessage.Message sendMessage = AbstractMessagHandler.convertWFCMessage(msg);
         sendMessage(Signal.PUBLISH,SubSignal.MS,sendMessage.toByteArray(),callback);
     }
 
@@ -276,26 +299,5 @@ public class ProtoService implements PushMessageCallback {
         sendMessage(Signal.PUBLISH,SubSignal.MP,pullMessageRequest.toByteArray(),null);
     }
 
-    private WFCMessage.Message convertWFCMessage(ProtoMessage messageResponse){
-        WFCMessage.Message.Builder builder = WFCMessage.Message.newBuilder();
-        builder.setFromUser(messageResponse.getFrom());
-        log.i("from user "+messageResponse.getFrom());
-        WFCMessage.Conversation conversation = WFCMessage.Conversation.newBuilder()
-                .setType(messageResponse.getConversationType())
-                .setLine(messageResponse.getLine())
-                .setTarget(messageResponse.getTarget())
-                .build();
-        builder.setConversation(conversation);
-        WFCMessage.MessageContent.Builder build = WFCMessage.MessageContent.newBuilder();
-        build.setType(messageResponse.getContent().getType());
-        log.i("protomessage content ->"+messageResponse.getContent().getSearchableContent()+" pushcontent->"+messageResponse.getContent().getPushContent());
-        if(!TextUtils.isEmpty(messageResponse.getContent().getSearchableContent())){
-            build.setSearchableContent(messageResponse.getContent().getSearchableContent());
-        }
-        if(!TextUtils.isEmpty(messageResponse.getContent().getPushContent())){
-            build.setPushContent(messageResponse.getContent().getPushContent());
-        }
-        builder.setContent(build.build());
-        return builder.build();
-    }
+
 }

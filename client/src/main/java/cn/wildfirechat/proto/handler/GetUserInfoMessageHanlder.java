@@ -35,6 +35,7 @@ public class GetUserInfoMessageHanlder extends AbstractMessagHandler{
             for(WFCMessage.UserResult userResult :pullUserResult.getResultList()){
                 WFCMessage.User user = userResult.getUser();
                 log.i("getuserinfo userid "+user.getUid());
+                currentUserId = user.getUid();
                 simpleFuture.setComplete(convertUser(user));
                 break;
             }

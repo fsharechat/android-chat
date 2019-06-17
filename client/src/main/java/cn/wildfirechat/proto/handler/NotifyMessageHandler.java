@@ -26,7 +26,7 @@ public class NotifyMessageHandler extends AbstractMessagHandler {
         try {
             WFCMessage.NotifyMessage notifyMessage = WFCMessage.NotifyMessage.parseFrom(byteBufferList.getAllByteArray());
             ProtoService.log.i("notifymessage "+notifyMessage.getHead()+" "+notifyMessage.getTarget()+" type "+notifyMessage.getType());
-            protoService.pullMessage(notifyMessage.getHead(),notifyMessage.getType());
+            protoService.pullMessage(notifyMessage.getHead()-1,notifyMessage.getType());
 
         } catch (InvalidProtocolBufferException e) {
             e.printStackTrace();

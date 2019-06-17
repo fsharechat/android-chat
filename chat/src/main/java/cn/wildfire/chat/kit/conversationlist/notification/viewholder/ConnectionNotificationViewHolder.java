@@ -1,5 +1,7 @@
 package cn.wildfire.chat.kit.conversationlist.notification.viewholder;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -8,6 +10,7 @@ import androidx.fragment.app.Fragment;
 
 import butterknife.Bind;
 import butterknife.OnClick;
+import cn.wildfire.chat.kit.ChatManagerHolder;
 import cn.wildfire.chat.kit.annotation.LayoutRes;
 import cn.wildfire.chat.kit.annotation.StatusNotificationType;
 import cn.wildfire.chat.kit.conversationlist.notification.ConnectionStatusNotification;
@@ -32,6 +35,10 @@ public class ConnectionNotificationViewHolder extends StatusNotificationViewHold
 
     @OnClick(R.id.statusTextView)
     public void onClick() {
+        SharedPreferences sharedPreferences = fragment.getActivity().getSharedPreferences("config", Context.MODE_PRIVATE);
+        String userId = sharedPreferences.getString("id","");
+        String token = sharedPreferences.getString("token","");
+        ChatManagerHolder.gChatManager.connect(userId,token);
         Toast.makeText(fragment.getContext(), "status on Click", Toast.LENGTH_SHORT).show();
     }
 }
