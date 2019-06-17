@@ -3,6 +3,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import cn.wildfirechat.model.Conversation;
 import cn.wildfirechat.model.ProtoChannelInfo;
 import cn.wildfirechat.model.ProtoChatRoomInfo;
 import cn.wildfirechat.model.ProtoChatRoomMembersInfo;
@@ -16,6 +18,7 @@ import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoMessageContent;
 import cn.wildfirechat.model.ProtoUnreadCount;
 import cn.wildfirechat.model.ProtoUserInfo;
+import cn.wildfirechat.proto.handler.ReceiveMessageHandler;
 
 public class JavaProtoLogic {
 
@@ -294,10 +297,39 @@ public class JavaProtoLogic {
     }
 
     public static  ProtoConversationInfo[] getConversations(int[] conversationTypes, int[] lines){
-        return new ProtoConversationInfo[0];
+        String[] friendList = protoService.getMyFriendList(true);
+        if(friendList != null){
+            ProtoConversationInfo[] protoConversationInfos = new ProtoConversationInfo[friendList.length];
+            int i = 0;
+            for(String friend : friendList){
+                ProtoConversationInfo protoConversationInfo = new ProtoConversationInfo();
+                protoConversationInfo.setConversationType(Conversation.ConversationType.Single.ordinal());
+                protoConversationInfo.setLine(0);
+                protoConversationInfo.setTarget(friend);
+                ProtoMessage protoMessage = ReceiveMessageHandler.protoMessageMap.get(friend);
+                if(protoMessage != null){
+                    protoMessage.setStatus(5);
+                }
+                protoConversationInfo.setLastMessage(protoMessage);
+                ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
+                protoUnreadCount.setUnread(1);
+                protoConversationInfo.setUnreadCount(protoUnreadCount);
+                protoConversationInfo.setTimestamp(System.currentTimeMillis());
+                protoConversationInfos[i++] =protoConversationInfo;
+            }
+            return protoConversationInfos;
+        }
+        return null;
+
     }
 
     public static  ProtoConversationInfo getConversation(int conversationType, String target, int line){
+        ProtoConversationInfo[] protoConversationInfos = getConversations(null,null);
+        for(ProtoConversationInfo protoConversationInfo : protoConversationInfos){
+            if(protoConversationInfo.getTarget().equals(target)){
+                return protoConversationInfo;
+            }
+        }
         return new ProtoConversationInfo();
     }
 

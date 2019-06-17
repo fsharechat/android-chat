@@ -267,7 +267,7 @@ public class ProtoService implements PushMessageCallback {
 
     public long startMessageId = 0;
     public ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser){
-        log.i("conversationType "+conversationType+" target "+target+" line "+line +" fromIndex "+fromIndex +" before "+before +" count "+" messageId "+startMessageId);
+        log.i("conversationType "+conversationType+" target "+target+" line "+line +" count "+" messageId "+startMessageId+" withuser "+withUser);
         WFCMessage.PullMessageRequest pullMessageRequest = WFCMessage.PullMessageRequest.newBuilder()
                 .setId(startMessageId)
                 .setType(conversationType)

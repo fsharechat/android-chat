@@ -7,6 +7,12 @@ import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.proto.JavaProtoLogic;
 import cn.wildfirechat.proto.ProtoService;
@@ -15,6 +21,7 @@ import cn.wildfirechat.proto.WFCMessage;
 public class ReceiveMessageHandler extends AbstractMessagHandler {
 
     private int currentMessageCount = 0;
+    public static Map<String,ProtoMessage> protoMessageMap = new ConcurrentHashMap<>();
     public ReceiveMessageHandler(ProtoService protoService) {
         super(protoService);
     }
@@ -39,6 +46,8 @@ public class ReceiveMessageHandler extends AbstractMessagHandler {
                     if(currentMessageCount % 200 == 0){
                         protoService.startMessageId = protoMessages[i].getMessageId();
                     }
+
+                    protoMessageMap.put(protoMessages[i].getTarget(),protoMessages[i]);
                 }
                 SimpleFuture<ProtoMessage[]> pullMessageFutrue = protoService.futureMap.remove(header.getMessageId());
                 if(pullMessageFutrue != null){
