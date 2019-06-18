@@ -44,15 +44,25 @@ public class ReceiveMessageHandler extends AbstractMessagHandler {
                 ProtoMessage[] protoMessages = new ProtoMessage[pullMessageResult.getMessageCount()];
                 for(int i = 0 ;i<pullMessageResult.getMessageCount();i++){
                     protoMessages[i] = protoService.convertProtoMessage(pullMessageResult.getMessage(i));
-                    currentMessageCount++;
-                    if(currentMessageCount % 200 == 0){
-                        protoService.startMessageId = protoMessages[i].getMessageId();
-                    }
+
 
                     protoMessageMap.put(protoMessages[i].getTarget(),protoMessages[i]);
                     ProtoService.log.i("receive promessage "+protoMessages[i].getTarget());
-                    if(!TextUtils.isEmpty(protoMessages[i].getContent().getPushContent()) ||
-                    !TextUtils.isEmpty(protoMessages[i].getContent().getSearchableContent()) && protoService.futureMap.get(header.getMessageId()) == null){
+                    if(!TextUtils.isEmpty(protoMessages[i].getContent().getPushContent())
+                            || !TextUtils.isEmpty(protoMessages[i].getContent().getSearchableContent())
+                            && protoService.futureMap.get(header.getMessageId()) == null){
+                        if(JavaProtoLogic.unReadMessageIdMap.get(protoMessages[i].getTarget()) == null){
+                            JavaProtoLogic.unReadMessageIdMap.put(protoMessages[i].getTarget(),protoMessages[i].getMessageId() -1);
+                        }
+                        currentMessageCount++;
+                        if(currentMessageCount % 200 == 0){
+                            if(JavaProtoLogic.unReadMessageIdMap.get(protoMessages[i].getTarget()) != null){
+                                protoService.startMessageId = JavaProtoLogic.unReadMessageIdMap.get(protoMessages[i].getTarget());
+                            } else {
+                                protoService.startMessageId = protoMessages[i].getMessageId();
+                            }
+                        }
+
                         int unReadCount = 0;
                         if(JavaProtoLogic.unReadCountMap.get(protoMessages[i].getTarget()) != null){
                             unReadCount = JavaProtoLogic.unReadCountMap.get(protoMessages[i].getTarget());

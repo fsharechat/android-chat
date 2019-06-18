@@ -39,6 +39,7 @@ import cn.wildfirechat.proto.handler.GetUserInfoMessageHanlder;
 import cn.wildfirechat.proto.handler.HandlerFriendRequestHandler;
 import cn.wildfirechat.proto.handler.MessageHandler;
 import cn.wildfirechat.proto.handler.NotifyFriendHandler;
+import cn.wildfirechat.proto.handler.NotifyFriendRequestHandler;
 import cn.wildfirechat.proto.handler.NotifyMessageHandler;
 import cn.wildfirechat.proto.handler.ReceiveMessageHandler;
 import cn.wildfirechat.proto.handler.RequestInfo;
@@ -88,6 +89,7 @@ public class ProtoService implements PushMessageCallback {
         messageHandlers.add(new SendMessageHandler(this));
         messageHandlers.add(new ReceiveMessageHandler(this));
         messageHandlers.add(new NotifyMessageHandler(this));
+        messageHandlers.add(new NotifyFriendRequestHandler(this));
     }
 
     public void setUserName(String userName){
@@ -238,7 +240,7 @@ public class ProtoService implements PushMessageCallback {
     }
 
     public ProtoFriendRequest[] getFriendRequest(boolean incomming) {
-        WFCMessage.Version version = WFCMessage.Version.newBuilder().setVersion(System.currentTimeMillis() - 10 * 60 * 1000).build();
+        WFCMessage.Version version = WFCMessage.Version.newBuilder().setVersion(System.currentTimeMillis() - 60 * 1000).build();
         SimpleFuture<ProtoFriendRequest[]> friendRequestFuture = sendMessageSync(Signal.PUBLISH,SubSignal.FRP,version.toByteArray());
         try {
             return friendRequestFuture.get(200,TimeUnit.MILLISECONDS);
@@ -359,6 +361,7 @@ public class ProtoService implements PushMessageCallback {
         WFCMessage.MessageContent messageContent = message.getContent();
         ProtoMessageContent messageConentResponse = new ProtoMessageContent();
         messageConentResponse.setType(messageContent.getType());
+        messageConentResponse.setContent(messageContent.getContent());
         messageConentResponse.setPushContent(message.getContent().getPushContent());
         messageConentResponse.setSearchableContent(messageContent.getSearchableContent());
         messageResponse.setContent(messageConentResponse);

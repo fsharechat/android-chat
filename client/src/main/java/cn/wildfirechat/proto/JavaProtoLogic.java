@@ -301,6 +301,7 @@ public class JavaProtoLogic {
     }
 
     public static Map<String,Integer> unReadCountMap = new ConcurrentHashMap<>();
+    public static Map<String,Long> unReadMessageIdMap = new ConcurrentHashMap<>();
 
     public static  ProtoConversationInfo[] getConversations(int[] conversationTypes, int[] lines){
         String[] friendList = protoService.getMyFriendList(true);
@@ -372,6 +373,7 @@ public class JavaProtoLogic {
 
     public static void clearUnreadStatus(int conversationType, String target, int line){
         unReadCountMap.put(target,0);
+        unReadMessageIdMap.put(target,null);
     }
 
     public static void clearAllUnreadStatus(){}
