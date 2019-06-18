@@ -43,7 +43,7 @@ public class ReceiveMessageHandler extends AbstractMessagHandler {
                 ProtoService.log.i("message count "+pullMessageResult.getMessageCount());
                 ProtoMessage[] protoMessages = new ProtoMessage[pullMessageResult.getMessageCount()];
                 for(int i = 0 ;i<pullMessageResult.getMessageCount();i++){
-                    protoMessages[i] = convertProtoMessage(pullMessageResult.getMessage(i));
+                    protoMessages[i] = protoService.convertProtoMessage(pullMessageResult.getMessage(i));
                     currentMessageCount++;
                     if(currentMessageCount % 200 == 0){
                         protoService.startMessageId = protoMessages[i].getMessageId();

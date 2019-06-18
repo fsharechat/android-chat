@@ -50,7 +50,7 @@ public class SearchUserResultMessageHandler extends AbstractMessagHandler{
         for(int i = 0;i<searchUserResult.getEntryCount();i++){
             WFCMessage.User user = searchUserResult.getEntry(i);
             log.i("user "+user.getDisplayName());
-            protoUserInfos[i] = convertUser(user);
+            protoUserInfos[i] = protoService.convertUser(user);
         }
         return protoUserInfos;
     }

@@ -1623,7 +1623,6 @@ public class ChatManager {
             }
             mClient.clearUnreadStatus(conversation.type.getValue(), conversation.target, conversation.line);
             ConversationInfo conversationInfo = getConversation(conversation);
-            ProtoService.log.i("clearUnread targe "+conversation.target);
             conversationInfo.unreadCount = new UnreadCount();
             for (OnConversationInfoUpdateListener listener : conversationInfoUpdateListeners) {
                 listener.onConversationUnreadStatusClear(conversationInfo, unreadCount);

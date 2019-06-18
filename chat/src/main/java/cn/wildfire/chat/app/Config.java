@@ -8,10 +8,12 @@ import android.os.Environment;
 
 public interface Config {
 
-    String IM_SERVER_HOST = "192.168.0.104";
+//    String IM_SERVER_HOST = "192.168.0.104";
+    String IM_SERVER_HOST = "172.16.46.201";
     int IM_SERVER_PORT = 6789;
 
-    String APP_SERVER_HOST = "192.168.0.104";
+//    String APP_SERVER_HOST = "192.168.0.104";
+    String APP_SERVER_HOST = "172.16.46.201";
     int APP_SERVER_PORT = 8081;
 
     String ICE_ADDRESS = "turn:turn.liyufan.win:3478";

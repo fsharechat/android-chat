@@ -34,9 +34,7 @@ public class GetUserInfoMessageHanlder extends AbstractMessagHandler{
             WFCMessage.PullUserResult pullUserResult = WFCMessage.PullUserResult.parseFrom(byteBufferList.getAllByteArray());
             for(WFCMessage.UserResult userResult :pullUserResult.getResultList()){
                 WFCMessage.User user = userResult.getUser();
-                log.i("getuserinfo userid "+user.getUid());
-                currentUserId = user.getUid();
-                simpleFuture.setComplete(convertUser(user));
+                simpleFuture.setComplete(protoService.convertUser(user));
                 break;
             }
         } catch (InvalidProtocolBufferException e) {
