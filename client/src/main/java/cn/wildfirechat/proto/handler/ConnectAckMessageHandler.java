@@ -8,6 +8,7 @@ import com.comsince.github.push.Signal;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import cn.wildfirechat.client.ConnectionStatus;
+import cn.wildfirechat.model.Conversation;
 import cn.wildfirechat.proto.JavaProtoLogic;
 import cn.wildfirechat.proto.ProtoService;
 import cn.wildfirechat.proto.WFCMessage;
@@ -31,6 +32,8 @@ public class ConnectAckMessageHandler extends AbstractMessagHandler{
                 @Override
                 public void run() {
                     protoService.getMyFriendList(true);
+                    protoService.getMessages(Conversation.ConversationType.Single.ordinal(),null,0,0,false,0,null);
+
                 }
             });
             JavaProtoLogic.onConnectionStatusChanged(ConnectionStatus.ConnectionStatusConnected);

@@ -122,13 +122,16 @@ public class ProtoService implements PushMessageCallback {
         log.e("comsince receive exception ",e);
         JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusUnconnected);
         removeHeartbeatScheduled();
-        reconectScheduled = androidNIOClient.post(new Runnable() {
-            @Override
-            public void run() {
-                log.i("receiveException start reconnect");
-                reconnect0();
-            }
-        }, 10 * 1000);
+        if(!userDisconnect){
+            reconectScheduled = androidNIOClient.post(new Runnable() {
+                @Override
+                public void run() {
+                    log.i("receiveException start reconnect");
+                    reconnect0();
+                }
+            }, 10 * 1000);
+        }
+
     }
 
     @Override
@@ -151,6 +154,10 @@ public class ProtoService implements PushMessageCallback {
         log.i("comsince reconnect");
         removeReconnectScheduled();
         removeHeartbeatScheduled();
+        if(androidNIOClient != null && androidNIOClient.connectStatus != ConnectStatus.CONNECTED){
+            log.i("comsince","close undisconnected socket");
+            androidNIOClient.close();
+        }
         reconnect0();
     }
 

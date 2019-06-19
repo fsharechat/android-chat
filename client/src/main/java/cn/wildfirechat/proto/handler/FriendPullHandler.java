@@ -39,12 +39,6 @@ public class FriendPullHandler extends AbstractMessagHandler{
                 friendList[i] = getFriendsResult.getEntry(i).getUid();
                 String friend = friendList[i];
                 log.i("friend list "+friend);
-                workExecutor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        protoService.getMessages(Conversation.ConversationType.Single.ordinal(),friend,0,0,false,0,null);
-                    }
-                });
             }
 
             friendListFuture.setComplete(friendList);

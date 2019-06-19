@@ -165,7 +165,7 @@ public class ClientService extends Service implements
                 log.i(TAG, "getActiveNetworkInfo failed.");
             }
 
-            if(netInfo.getDetailedState() == NetworkInfo.DetailedState.CONNECTED){
+            if(netInfo != null && netInfo.getDetailedState() == NetworkInfo.DetailedState.CONNECTED){
                 log.i(TAG,"network changed reconnect");
                 JavaProtoLogic.reconnect();
             }
