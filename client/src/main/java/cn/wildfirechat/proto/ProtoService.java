@@ -133,6 +133,7 @@ public class ProtoService implements PushMessageCallback {
 
     @Override
     public void onConnected() {
+        log.i("comsince connected");
        JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnected);
        sendConnectMessage();
        heartbeatScheduled = androidNIOClient.post(new Runnable() {

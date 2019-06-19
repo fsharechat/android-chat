@@ -11,6 +11,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 
 import java.util.logging.Logger;
 
+import cn.wildfirechat.model.Conversation;
 import cn.wildfirechat.proto.JavaProtoLogic;
 import cn.wildfirechat.proto.ProtoService;
 import cn.wildfirechat.proto.WFCMessage;
@@ -36,7 +37,14 @@ public class FriendPullHandler extends AbstractMessagHandler{
             String[] friendList = new String[getFriendsResult.getEntryCount()];
             for(int i = 0;i < getFriendsResult.getEntryCount(); i++){
                 friendList[i] = getFriendsResult.getEntry(i).getUid();
-                log.i("friend list "+friendList[i]);
+                String friend = friendList[i];
+                log.i("friend list "+friend);
+                workExecutor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        protoService.getMessages(Conversation.ConversationType.Single.ordinal(),friend,0,0,false,0,null);
+                    }
+                });
             }
 
             friendListFuture.setComplete(friendList);
