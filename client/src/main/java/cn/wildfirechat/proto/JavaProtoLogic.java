@@ -267,6 +267,10 @@ public class JavaProtoLogic {
         protoService.connect(host,shortPort);
     }
 
+    public static void reconnect(){
+        protoService.reconnect();
+    }
+
     public static void setAuthInfo(String userName, String token){
         protoService.setUserName(userName);
         protoService.setToken(token);
@@ -304,7 +308,7 @@ public class JavaProtoLogic {
     public static Map<String,Long> unReadMessageIdMap = new ConcurrentHashMap<>();
 
     public static  ProtoConversationInfo[] getConversations(int[] conversationTypes, int[] lines){
-        String[] friendList = protoService.getMyFriendList(true);
+        String[] friendList = protoService.getMyFriendList(false);
         if(friendList != null){
             ProtoConversationInfo[] protoConversationInfos = new ProtoConversationInfo[friendList.length];
             int i = 0;

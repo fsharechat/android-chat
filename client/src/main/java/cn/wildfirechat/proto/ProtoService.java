@@ -63,8 +63,10 @@ public class ProtoService implements PushMessageCallback {
     public ConcurrentHashMap<Integer, SimpleFuture> futureMap = new ConcurrentHashMap<>();
     public ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
-    private String[] myFriendList;
+    public String[] myFriendList;
     private volatile boolean userDisconnect = false;
+    private Object reconectScheduled;
+    private Object heartbeatScheduled;
 
     public ProtoService(){
         initHandlers();
@@ -74,11 +76,11 @@ public class ProtoService implements PushMessageCallback {
         userDisconnect = false;
         androidNIOClient = new AndroidNIOClient(host,shortPort);
         androidNIOClient.setPushMessageCallback(this);
-        androidNIOClient.connect();
+        reconnect0();
     }
 
     private void initHandlers(){
-        messageHandlers.add(new ConnectAckMessageHandler());
+        messageHandlers.add(new ConnectAckMessageHandler(this));
         messageHandlers.add(new SearchUserResultMessageHandler(this));
         messageHandlers.add(new GetUserInfoMessageHanlder(this));
         messageHandlers.add(new AddFriendRequestHandler(this));
@@ -117,30 +119,57 @@ public class ProtoService implements PushMessageCallback {
 
     @Override
     public void receiveException(Exception e) {
+        log.e("comsince receive exception ",e);
         JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusUnconnected);
-        scheduledExecutorService.schedule(new Runnable() {
+        removeHeartbeatScheduled();
+        reconectScheduled = androidNIOClient.post(new Runnable() {
             @Override
             public void run() {
-                JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnecting);
-                if(!userDisconnect){
-                    androidNIOClient.connect();
-                }
+                log.i("receiveException start reconnect");
+                reconnect0();
             }
-        },10,TimeUnit.SECONDS);
+        }, 10 * 1000);
     }
 
     @Override
     public void onConnected() {
        JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnected);
        sendConnectMessage();
-       scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+       heartbeatScheduled = androidNIOClient.post(new Runnable() {
            @Override
            public void run() {
                if(androidNIOClient.connectStatus == ConnectStatus.CONNECTED){
-                   androidNIOClient.heart(50*1000);
+                   androidNIOClient.heart(60 * 1000);
                }
+               heartbeatScheduled = androidNIOClient.post(this,50*1000);
            }
-       },10,50, TimeUnit.SECONDS);
+       },50 * 1000);
+    }
+
+    public void reconnect(){
+        log.i("comsince reconnect");
+        removeReconnectScheduled();
+        removeHeartbeatScheduled();
+        reconnect0();
+    }
+
+    public void reconnect0(){
+        if(!userDisconnect && androidNIOClient != null){
+            JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnecting);
+            androidNIOClient.connect();
+        }
+    }
+
+    private void removeHeartbeatScheduled(){
+        if(heartbeatScheduled != null){
+            androidNIOClient.removeScheduled(heartbeatScheduled);
+        }
+    }
+
+    private void removeReconnectScheduled(){
+        if(reconectScheduled != null){
+            androidNIOClient.removeScheduled(reconectScheduled);
+        }
     }
 
     private void sendConnectMessage(){
@@ -168,7 +197,7 @@ public class ProtoService implements PushMessageCallback {
             @Override
             public void run() {
                 int messageId = PreferenceManager.getDefaultSharedPreferences(context).getInt("message_id",0);
-                log.i("send message id "+messageId + callback);
+                log.i("sendMessage send signal "+signal+" subSignal "+subSignal+" messageId "+messageId);
                 androidNIOClient.sendMessage(signal, subSignal,messageId, message);
                 if(callback != null){
                     RequestInfo requestInfo = new RequestInfo(signal,subSignal,callback.getClass(),callback);
@@ -185,8 +214,9 @@ public class ProtoService implements PushMessageCallback {
             @Override
             public void run() {
                 int messageId = PreferenceManager.getDefaultSharedPreferences(context).getInt("message_id",0);
-                androidNIOClient.sendMessage(signal, subSignal,messageId, message);
+                log.i("sendMessageSync send signal "+signal+" subSignal "+subSignal+" messageId "+messageId);
                 futureMap.put(messageId,simpleFuture);
+                androidNIOClient.sendMessage(signal, subSignal,messageId, message);
                 PreferenceManager.getDefaultSharedPreferences(context).edit().putInt("message_id",++messageId).apply();
             }
         });
@@ -258,6 +288,10 @@ public class ProtoService implements PushMessageCallback {
     }
 
     public String[] getMyFriendList(boolean refresh){
+        if(!refresh && myFriendList != null){
+            return myFriendList;
+        }
+
         WFCMessage.Version request = WFCMessage.Version.newBuilder().setVersion(0).build();
         SimpleFuture<String[]> friendListFuture = sendMessageSync(Signal.PUBLISH,SubSignal.FP,request.toByteArray());
         try {

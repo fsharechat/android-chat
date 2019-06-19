@@ -1,7 +1,14 @@
 package cn.wildfirechat.client;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.IInterface;
@@ -16,6 +23,7 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 
 import com.comsince.github.logger.LoggerFactory;
+import com.tencent.mars.BaseEvent;
 import com.tencent.mars.Mars;
 import com.tencent.mars.app.AppLogic;
 
@@ -138,7 +146,32 @@ public class ClientService extends Service implements
     private int clientVersion = 200;
     private static final String TAG = "ClientService";
 
-    //private BaseEvent.ConnectionReceiver mConnectionReceiver;
+    private BroadcastReceiver mConnectionReceiver;
+
+
+    public  class ConnectionReceiver extends BroadcastReceiver {
+        private com.comsince.github.logger.Log log = LoggerFactory.getLogger(ConnectionReceiver.class);
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (context == null || intent == null) {
+                return;
+            }
+
+            ConnectivityManager mgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo netInfo = null;
+            try {
+                netInfo = mgr.getActiveNetworkInfo();
+            } catch (Exception e) {
+                log.i(TAG, "getActiveNetworkInfo failed.");
+            }
+
+            if(netInfo.getDetailedState() == NetworkInfo.DetailedState.CONNECTED){
+                log.i(TAG,"network changed reconnect");
+                JavaProtoLogic.reconnect();
+            }
+
+        }
+    }
 
     private String mHost;
     private int mPort;
@@ -1653,17 +1686,16 @@ public class ClientService extends Service implements
     @Override
     public void onCreate() {
         super.onCreate();
-         LoggerFactory.setLoggger(new AndroidLogger(ProtoService.class));
         // Initialize the Mars PlatformComm
         handler = new Handler(Looper.getMainLooper());
         JavaProtoLogic.init();
         Mars.init(getApplicationContext(), handler);
-//        if (mConnectionReceiver == null) {
-//            mConnectionReceiver = new BaseEvent.ConnectionReceiver();
-//            IntentFilter filter = new IntentFilter();
-//            filter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
-//            registerReceiver(mConnectionReceiver, filter);
-//        }
+        if (mConnectionReceiver == null) {
+            mConnectionReceiver = new ConnectionReceiver();
+            IntentFilter filter = new IntentFilter();
+            filter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+            registerReceiver(mConnectionReceiver, filter);
+        }
 
         try {
             mBinder.registerMessageContent(AddGroupMemberNotificationContent.class.getName());
@@ -1697,10 +1729,10 @@ public class ClientService extends Service implements
         //Log.appenderClose();
         super.onDestroy();
         resetProto();
-//        if (mConnectionReceiver != null) {
-//            unregisterReceiver(mConnectionReceiver);
-//            mConnectionReceiver = null;
-//        }
+        if (mConnectionReceiver != null) {
+            unregisterReceiver(mConnectionReceiver);
+            mConnectionReceiver = null;
+        }
     }
 
     private void initProto(String userName, String userPwd) {

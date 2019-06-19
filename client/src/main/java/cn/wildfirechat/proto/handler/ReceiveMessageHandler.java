@@ -74,7 +74,12 @@ public class ReceiveMessageHandler extends AbstractMessagHandler {
                 if(pullMessageFutrue != null){
                     pullMessageFutrue.setComplete(protoMessages);
                 } else {
-                    JavaProtoLogic.onReceiveMessage(protoMessages,false);
+                    workExecutor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            JavaProtoLogic.onReceiveMessage(protoMessages,false);
+                        }
+                    });
                 }
             } catch (InvalidProtocolBufferException e) {
                 e.printStackTrace();

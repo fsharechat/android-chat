@@ -1,6 +1,8 @@
 package cn.wildfirechat.proto.handler;
 
 import com.comsince.github.core.ByteBufferList;
+import com.comsince.github.logger.Log;
+import com.comsince.github.logger.LoggerFactory;
 import com.comsince.github.push.Header;
 import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
@@ -9,9 +11,7 @@ import cn.wildfirechat.proto.JavaProtoLogic;
 import cn.wildfirechat.proto.ProtoService;
 
 public class NotifyFriendHandler extends AbstractMessagHandler{
-
-    public static long friendRequestTime = 0;
-
+    private Log log = LoggerFactory.getLogger(NotifyFriendHandler.class);
     public NotifyFriendHandler(ProtoService protoService) {
         super(protoService);
     }
@@ -23,12 +23,13 @@ public class NotifyFriendHandler extends AbstractMessagHandler{
 
     @Override
     public void processMessage(Header header, ByteBufferList byteBufferList) {
-        //friendRequestTime = byteBufferList.getLong();
-        //ProtoService.log.i("receive friend request update message friend request time "+friendRequestTime);
-//        JavaProtoLogic.onFriendRequestUpdated();
-//        String[] friendList = protoService.getMyFriendList(true);
-//        if(friendList != null){
-//            JavaProtoLogic.onFriendListUpdated(friendList);
-//        }
+        log.i("receive notifyHandler signal");
+        workExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                JavaProtoLogic.onFriendRequestUpdated();
+                protoService.getMyFriendList(true);
+            }
+        });
     }
 }
