@@ -36,7 +36,6 @@ public class ConnectAckMessageHandler extends AbstractMessagHandler{
 
                 }
             });
-            JavaProtoLogic.onConnectionStatusChanged(ConnectionStatus.ConnectionStatusConnected);
             WFCMessage.ConnectAckPayload connectAckPayload = WFCMessage.ConnectAckPayload.parseFrom(byteBufferList.getAllByteArray());
             Log.i(TAG,"friendHead "+connectAckPayload.getFriendHead()+" msgHead "+connectAckPayload.getMsgHead()+" serverTime "+connectAckPayload.getServerTime());
         } catch (InvalidProtocolBufferException e) {

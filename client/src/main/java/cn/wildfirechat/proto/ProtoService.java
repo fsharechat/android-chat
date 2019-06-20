@@ -76,7 +76,7 @@ public class ProtoService implements PushMessageCallback {
         userDisconnect = false;
         androidNIOClient = new AndroidNIOClient(host,shortPort);
         androidNIOClient.setPushMessageCallback(this);
-        reconnect0();
+        reconnect();
     }
 
     private void initHandlers(){
@@ -127,7 +127,7 @@ public class ProtoService implements PushMessageCallback {
                 @Override
                 public void run() {
                     log.i("receiveException start reconnect");
-                    reconnect0();
+                    reconnect();
                 }
             }, 10 * 1000);
         }
@@ -138,6 +138,7 @@ public class ProtoService implements PushMessageCallback {
     public void onConnected() {
         log.i("comsince connected");
        JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnected);
+       removeReconnectScheduled();
        sendConnectMessage();
        heartbeatScheduled = androidNIOClient.post(new Runnable() {
            @Override
@@ -150,23 +151,62 @@ public class ProtoService implements PushMessageCallback {
        },50 * 1000);
     }
 
+//    public void reconnect(){
+//        if(androidNIOClient != null){
+//            androidNIOClient.post(new Runnable() {
+//                @Override
+//                public void run() {
+//                    log.i("comsince reconnect");
+//                    removeReconnectScheduled();
+//                    if(androidNIOClient.connectStatus == ConnectStatus.DISCONNECT){
+//                        removeHeartbeatScheduled();
+//                        androidNIOClient.close();
+//                    }
+//                    reconnect0();
+//                }
+//            },0);
+//        }
+//
+//    }
+
     public void reconnect(){
-        log.i("comsince reconnect");
-        removeReconnectScheduled();
-        removeHeartbeatScheduled();
-        if(androidNIOClient != null && androidNIOClient.connectStatus != ConnectStatus.CONNECTED){
-            log.i("comsince","close undisconnected socket");
-            androidNIOClient.close();
+        if(!userDisconnect && androidNIOClient != null){
+            androidNIOClient.post(new Runnable() {
+                @Override
+                public void run() {
+                    log.i("reconnect status "+androidNIOClient.connectStatus);
+                    switch (androidNIOClient.connectStatus){
+                        case CONNECTING:
+                            removeReconnectScheduled();
+                            removeHeartbeatScheduled();
+                            androidNIOClient.close();
+                            JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnecting);
+                            androidNIOClient.connect();
+                            break;
+                        case CONNECTED:
+                            break;
+                        case DISCONNECT:
+                            removeReconnectScheduled();
+                            removeHeartbeatScheduled();
+                            JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnecting);
+                            androidNIOClient.connect();
+                            break;
+                    }
+
+                }
+            },0);
         }
-        reconnect0();
     }
 
-    public void reconnect0(){
-        if(!userDisconnect && androidNIOClient != null){
-            JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnecting);
-            androidNIOClient.connect();
-        }
-    }
+//    public void reconnect0(){
+//        if(!userDisconnect && androidNIOClient != null){
+//            log.i("comsince start connect ");
+//            if(androidNIOClient.connectStatus != ConnectStatus.CONNECTED){
+//                JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnecting);
+//            }
+//            androidNIOClient.connect();
+//        }
+//    }
 
     private void removeHeartbeatScheduled(){
         if(heartbeatScheduled != null){

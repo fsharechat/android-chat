@@ -1686,6 +1686,7 @@ public class ClientService extends Service implements
     @Override
     public void onCreate() {
         super.onCreate();
+        LoggerFactory.initLoggerClass(AndroidLogger.class);
         // Initialize the Mars PlatformComm
         handler = new Handler(Looper.getMainLooper());
         JavaProtoLogic.init();

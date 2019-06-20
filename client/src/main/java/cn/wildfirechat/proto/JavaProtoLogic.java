@@ -377,7 +377,7 @@ public class JavaProtoLogic {
 
     public static void clearUnreadStatus(int conversationType, String target, int line){
         unReadCountMap.put(target,0);
-        unReadMessageIdMap.put(target,null);
+        unReadMessageIdMap.put(target,0l);
     }
 
     public static void clearAllUnreadStatus(){}
