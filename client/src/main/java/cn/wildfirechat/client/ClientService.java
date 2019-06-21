@@ -7,8 +7,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.IInterface;
@@ -19,11 +17,8 @@ import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
-
 import androidx.annotation.Nullable;
-
 import com.comsince.github.logger.LoggerFactory;
-import com.tencent.mars.BaseEvent;
 import com.tencent.mars.Mars;
 import com.tencent.mars.app.AppLogic;
 
@@ -35,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import cn.wildfirechat.alarm.AlarmWrapper;
 import cn.wildfirechat.message.CallStartMessageContent;
 import cn.wildfirechat.message.FileMessageContent;
 import cn.wildfirechat.message.ImageMessageContent;
@@ -147,6 +143,8 @@ public class ClientService extends Service implements
     private static final String TAG = "ClientService";
 
     private BroadcastReceiver mConnectionReceiver;
+
+    private AlarmWrapper alarmWrapper;
 
 
     public  class ConnectionReceiver extends BroadcastReceiver {
@@ -1689,7 +1687,9 @@ public class ClientService extends Service implements
         LoggerFactory.initLoggerClass(AndroidLogger.class);
         // Initialize the Mars PlatformComm
         handler = new Handler(Looper.getMainLooper());
-        JavaProtoLogic.init();
+        alarmWrapper = new AlarmWrapper(this,"clientservice");
+        alarmWrapper.start();
+        JavaProtoLogic.init(alarmWrapper);
         Mars.init(getApplicationContext(), handler);
         if (mConnectionReceiver == null) {
             mConnectionReceiver = new ConnectionReceiver();
@@ -1729,6 +1729,9 @@ public class ClientService extends Service implements
     public void onDestroy() {
         //Log.appenderClose();
         super.onDestroy();
+        if(alarmWrapper != null){
+            alarmWrapper.stop();
+        }
         resetProto();
         if (mConnectionReceiver != null) {
             unregisterReceiver(mConnectionReceiver);

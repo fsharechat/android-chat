@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import cn.wildfirechat.alarm.AlarmWrapper;
 import cn.wildfirechat.model.Conversation;
 import cn.wildfirechat.model.ProtoChannelInfo;
 import cn.wildfirechat.model.ProtoChatRoomInfo;
@@ -259,8 +260,8 @@ public class JavaProtoLogic {
         }
     }
 
-    public static void init(){
-        protoService = new ProtoService();
+    public static void init(AlarmWrapper alarmWrapper){
+        protoService = new ProtoService(alarmWrapper);
     }
 
     public static void connect(String host, int shortPort){

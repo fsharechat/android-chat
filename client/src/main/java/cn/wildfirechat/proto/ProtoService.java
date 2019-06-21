@@ -20,17 +20,15 @@ import com.comsince.github.push.util.Base64;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
+import cn.wildfirechat.alarm.AlarmWrapper;
+import cn.wildfirechat.alarm.Timer;
 import cn.wildfirechat.model.ProtoFriendRequest;
 import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoMessageContent;
 import cn.wildfirechat.model.ProtoUserInfo;
-import cn.wildfirechat.proto.handler.AbstractMessagHandler;
 import cn.wildfirechat.proto.handler.AddFriendRequestHandler;
 import cn.wildfirechat.proto.handler.ConnectAckMessageHandler;
 import cn.wildfirechat.proto.handler.FriendPullHandler;
@@ -65,10 +63,13 @@ public class ProtoService implements PushMessageCallback {
 
     public String[] myFriendList;
     private volatile boolean userDisconnect = false;
-    private Object reconectScheduled;
-    private Object heartbeatScheduled;
+    private AlarmWrapper alarmWrapper;
+    Timer heartbeatTimer;
+    Timer reconnectTimer;
+    int interval = 0;
 
-    public ProtoService(){
+    public ProtoService(AlarmWrapper alarmWrapper){
+        this.alarmWrapper = alarmWrapper;
         initHandlers();
     }
 
@@ -109,6 +110,9 @@ public class ProtoService implements PushMessageCallback {
 
     @Override
     public void receiveMessage(Header header, ByteBufferList byteBufferList) {
+        if(Signal.PING == header.getSignal()){
+            schedule();
+        }
          for(MessageHandler messageHandler : messageHandlers){
              if(messageHandler.match(header)){
                  messageHandler.processMessage(header,byteBufferList);
@@ -121,15 +125,18 @@ public class ProtoService implements PushMessageCallback {
     public void receiveException(Exception e) {
         log.e("comsince receive exception ",e);
         JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusUnconnected);
-        removeHeartbeatScheduled();
+        cancelHeartTimer();
         if(!userDisconnect){
-            reconectScheduled = androidNIOClient.post(new Runnable() {
-                @Override
-                public void run() {
-                    log.i("receiveException start reconnect");
-                    reconnect();
-                }
-            }, 10 * 1000);
+            alarmWrapper.schedule(reconnectTimer =
+                    new Timer.Builder().period(10 * 1000)
+                            .wakeup(true)
+                            .action(new Runnable() {
+                                @Override
+                                public void run() {
+                                    log.i("receiveException start reconnect");
+                                    reconnect();
+                                }
+                            }).build());
         }
 
     }
@@ -138,36 +145,10 @@ public class ProtoService implements PushMessageCallback {
     public void onConnected() {
         log.i("comsince connected");
        JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnected);
-       removeReconnectScheduled();
+       cancelReconnectTimer();
        sendConnectMessage();
-       heartbeatScheduled = androidNIOClient.post(new Runnable() {
-           @Override
-           public void run() {
-               if(androidNIOClient.connectStatus == ConnectStatus.CONNECTED){
-                   androidNIOClient.heart(60 * 1000);
-               }
-               heartbeatScheduled = androidNIOClient.post(this,50*1000);
-           }
-       },50 * 1000);
+       schedule();
     }
-
-//    public void reconnect(){
-//        if(androidNIOClient != null){
-//            androidNIOClient.post(new Runnable() {
-//                @Override
-//                public void run() {
-//                    log.i("comsince reconnect");
-//                    removeReconnectScheduled();
-//                    if(androidNIOClient.connectStatus == ConnectStatus.DISCONNECT){
-//                        removeHeartbeatScheduled();
-//                        androidNIOClient.close();
-//                    }
-//                    reconnect0();
-//                }
-//            },0);
-//        }
-//
-//    }
 
     public void reconnect(){
         if(!userDisconnect && androidNIOClient != null){
@@ -177,8 +158,8 @@ public class ProtoService implements PushMessageCallback {
                     log.i("reconnect status "+androidNIOClient.connectStatus);
                     switch (androidNIOClient.connectStatus){
                         case CONNECTING:
-                            removeReconnectScheduled();
-                            removeHeartbeatScheduled();
+                            cancelReconnectTimer();
+                            cancelHeartTimer();
                             androidNIOClient.close();
                             JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnecting);
                             androidNIOClient.connect();
@@ -186,8 +167,8 @@ public class ProtoService implements PushMessageCallback {
                         case CONNECTED:
                             break;
                         case DISCONNECT:
-                            removeReconnectScheduled();
-                            removeHeartbeatScheduled();
+                            cancelReconnectTimer();
+                            cancelHeartTimer();
                             JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnecting);
                             androidNIOClient.connect();
                             break;
@@ -198,25 +179,32 @@ public class ProtoService implements PushMessageCallback {
         }
     }
 
-//    public void reconnect0(){
-//        if(!userDisconnect && androidNIOClient != null){
-//            log.i("comsince start connect ");
-//            if(androidNIOClient.connectStatus != ConnectStatus.CONNECTED){
-//                JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnecting);
-//            }
-//            androidNIOClient.connect();
-//        }
-//    }
+    private void schedule(){
+        alarmWrapper.schedule(heartbeatTimer =
+                new Timer.Builder().period((30 + 30 * interval) * 1000)
+                        .wakeup(true)
+                        .action(new Runnable() {
+                            @Override
+                            public void run() {
+                                long current = (30 + 30 * ++interval) * 1000;
+                                if(current > 8 * 60 * 1000){
+                                    current = 8 * 60 * 1000;
+                                }
+                                androidNIOClient.heart(current);
+                            }
+                        }).build());
+    }
 
-    private void removeHeartbeatScheduled(){
-        if(heartbeatScheduled != null){
-            androidNIOClient.removeScheduled(heartbeatScheduled);
+    private void cancelHeartTimer(){
+        interval = 0;
+        if(heartbeatTimer != null){
+            alarmWrapper.cancel(heartbeatTimer);
         }
     }
 
-    private void removeReconnectScheduled(){
-        if(reconectScheduled != null){
-            androidNIOClient.removeScheduled(reconectScheduled);
+    private void cancelReconnectTimer(){
+        if(reconnectTimer != null){
+            alarmWrapper.cancel(reconnectTimer);
         }
     }
 
