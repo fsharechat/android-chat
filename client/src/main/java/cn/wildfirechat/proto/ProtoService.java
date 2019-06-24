@@ -220,7 +220,8 @@ public class ProtoService implements PushMessageCallback {
         ConnectMessage connectMessage = new ConnectMessage();
         connectMessage.setUserName(userName);
         byte[] byteToken = Base64.decode(token);
-        byte[] aesToken = AES.AESDecrypt(byteToken,"",true);
+        byte[] aesToken = AES.AESDecrypt(byteToken,"",false);
+        log.i("sendConnectMessage userName "+userName+" token "+token+" aesToken "+aesToken);
         String allToken = new String(aesToken);
 
         String pwd = allToken.substring(0,allToken.indexOf("|"));
