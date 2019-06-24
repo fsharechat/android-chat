@@ -80,6 +80,14 @@ public class ProtoService implements PushMessageCallback {
         reconnect();
     }
 
+    public void stopProtoService(){
+        if(androidNIOClient != null){
+            androidNIOClient.setPushMessageCallback(null);
+            androidNIOClient.close();
+            androidNIOClient = null;
+        }
+    }
+
     private void initHandlers(){
         messageHandlers.add(new ConnectAckMessageHandler(this));
         messageHandlers.add(new SearchUserResultMessageHandler(this));

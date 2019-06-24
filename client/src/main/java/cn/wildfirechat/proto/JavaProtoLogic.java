@@ -1,6 +1,9 @@
 package cn.wildfirechat.proto;
 import android.text.TextUtils;
 
+import com.comsince.github.logger.Log;
+import com.comsince.github.logger.LoggerFactory;
+
 import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +31,7 @@ import cn.wildfirechat.proto.handler.ReceiveMessageHandler;
 public class JavaProtoLogic {
 
     private static ProtoService protoService;
+    private static Log logger = LoggerFactory.getLogger(JavaProtoLogic.class);
 
     public interface IConnectionStatusCallback {
         void onConnectionStatusChanged(int status);
@@ -261,15 +265,23 @@ public class JavaProtoLogic {
     }
 
     public static void init(AlarmWrapper alarmWrapper){
+        logger.i("init proto service");
         protoService = new ProtoService(alarmWrapper);
     }
 
+    public static void stopProtoService(){
+        protoService.stopProtoService();
+    }
+
     public static void connect(String host, int shortPort){
+        logger.i("connect host "+host+" port "+shortPort);
         protoService.connect(host,shortPort);
     }
 
     public static void reconnect(){
-        protoService.reconnect();
+        if(protoService != null){
+            protoService.reconnect();
+        }
     }
 
     public static void setAuthInfo(String userName, String token){

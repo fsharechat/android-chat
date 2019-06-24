@@ -146,6 +146,8 @@ public class ClientService extends Service implements
 
     private AlarmWrapper alarmWrapper;
 
+    private com.comsince.github.logger.Log logger = LoggerFactory.getLogger(ClientService.class);
+
 
     public  class ConnectionReceiver extends BroadcastReceiver {
         private com.comsince.github.logger.Log log = LoggerFactory.getLogger(ConnectionReceiver.class);
@@ -1685,6 +1687,7 @@ public class ClientService extends Service implements
     public void onCreate() {
         super.onCreate();
         LoggerFactory.initLoggerClass(AndroidLogger.class);
+        logger.i("onCreate");
         // Initialize the Mars PlatformComm
         handler = new Handler(Looper.getMainLooper());
         alarmWrapper = new AlarmWrapper(this,"clientservice");
@@ -1728,9 +1731,11 @@ public class ClientService extends Service implements
     @Override
     public void onDestroy() {
         //Log.appenderClose();
+        logger.i("onDestroy");
         super.onDestroy();
         if(alarmWrapper != null){
             alarmWrapper.stop();
+            alarmWrapper = null;
         }
         resetProto();
         if (mConnectionReceiver != null) {
@@ -1740,6 +1745,7 @@ public class ClientService extends Service implements
     }
 
     private void initProto(String userName, String userPwd) {
+        logger.i("init proto userName "+userName+" userPwd "+userPwd);
 //        AppLogic.setCallBack(this);
 //        SdtLogic.setCallBack(this);
 //
@@ -1800,6 +1806,7 @@ public class ClientService extends Service implements
 
         JavaProtoLogic.setConnectionStatusCallback(null);
         JavaProtoLogic.setReceiveMessageCallback(null);
+        JavaProtoLogic.stopProtoService();
     }
 
 //    public void openXlog() {
