@@ -15,6 +15,7 @@ import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
 import com.comsince.github.push.util.AES;
 import com.comsince.github.push.util.Base64;
+import com.google.protobuf.ByteString;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -312,8 +313,9 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         WFCMessage.MessageContent messageContent = message.getContent();
         ProtoMessageContent messageContentResponse = new ProtoMessageContent();
         messageContentResponse.setType(messageContent.getType());
+        messageContentResponse.setBinaryContent(messageContent.getData().toByteArray());
         messageContentResponse.setContent(messageContent.getContent());
-        messageContentResponse.setPushContent(message.getContent().getPushContent());
+        messageContentResponse.setPushContent(messageContent.getPushContent());
         messageContentResponse.setSearchableContent(messageContent.getSearchableContent());
         messageResponse.setContent(messageContentResponse);
         return messageResponse;

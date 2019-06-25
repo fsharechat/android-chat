@@ -71,7 +71,9 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     @Override
     public void addProtoMessageByTarget(String target, ProtoMessage protoMessage, boolean isPush) {
         logger.i("target "+target+" conversationtype "+protoMessage.getConversationType()+" add protomessage isPush "+isPush);
-        if((!TextUtils.isEmpty(protoMessage.getContent().getPushContent()) || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent()))){
+        if((!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
+                || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent()))
+                || protoMessage.getContent().getBinaryContent() != null){
             //接收到的推送消息
             List<ProtoMessage> protoMessages = protoMessageMap.get(target);
             if(protoMessages != null){
@@ -94,6 +96,7 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
                 unReadMessageIdMap.put(target,protoMessage.getMessageId() - 1);
             }
             if(protoMessage.getConversationType() == ProtoConstants.ConversationType.ConversationType_Group){
+                logger.i("createGroupConversation "+protoMessage.getTarget());
                 createGroupConversation(protoMessage.getTarget());
             }
         }
@@ -158,23 +161,19 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     }
 
     @Override
-    public ProtoConversationInfo[] getPrivateConversations() {
+    public List<ProtoConversationInfo> getPrivateConversations() {
         for(String friend : getFriendList()){
             if(getLastMessage(friend) != null){
                 createPrivateConversation(friend);
             }
         }
+        List<ProtoConversationInfo> protoConversationInfoList = new ArrayList<>();
         if(privateConversations != null){
-            ProtoConversationInfo[] protoConversationInfos = new ProtoConversationInfo[privateConversations.size()];
-            List<ProtoConversationInfo> protoConversationInfoList = new ArrayList<>();
             for(Map.Entry<String,ProtoConversationInfo> entry : privateConversations.entrySet()){
                 protoConversationInfoList.add(entry.getValue());
             }
-            protoConversationInfoList.toArray(protoConversationInfos);
-            return protoConversationInfos;
         }
-
-        return new ProtoConversationInfo[0];
+        return protoConversationInfoList;
     }
 
     @Override
@@ -197,21 +196,19 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     }
 
     @Override
-    public ProtoConversationInfo[] getGroupConversations() {
+    public List<ProtoConversationInfo> getGroupConversations() {
+        List<ProtoConversationInfo> protoConversationInfoList = new ArrayList<>();
         if(groupConversations != null){
-            ProtoConversationInfo[] protoConversationInfos = new ProtoConversationInfo[groupConversations.size()];
-            List<ProtoConversationInfo> protoConversationInfoList = new ArrayList<>();
             for(Map.Entry<String,ProtoConversationInfo> entry : groupConversations.entrySet()){
                 protoConversationInfoList.add(entry.getValue());
             }
-            protoConversationInfoList.toArray(protoConversationInfos);
-            return protoConversationInfos;
         }
-        return new ProtoConversationInfo[0];
+        return protoConversationInfoList;
     }
 
     @Override
     public ProtoConversationInfo getConversation(int conversationType, String target, int line) {
+        logger.i("getConversation conversationType "+conversationType + " target "+target +" line "+line);
         if(conversationType == ProtoConstants.ConversationType.ConversationType_Private){
             return privateConversations.get(target);
         } else if(conversationType == ProtoConstants.ConversationType.ConversationType_Group){

@@ -318,22 +318,17 @@ public class JavaProtoLogic {
     }
 
     public static  ProtoConversationInfo[] getConversations(int[] conversationTypes, int[] lines){
-        logger.i("conversationTypes size "+conversationTypes.length);
-        if(lines != null){
-            for(int line : lines){
-                logger.i("line is "+line);
-            }
-        }
+        List<ProtoConversationInfo> protoConversationInfos = new ArrayList<>();
         for(int conversationType : conversationTypes){
-            logger.i("conversationType "+conversationType);
             if(conversationType == ProtoConstants.ConversationType.ConversationType_Private){
-                return protoService.getImMemoryStore().getPrivateConversations();
+                protoConversationInfos.addAll(protoService.getImMemoryStore().getPrivateConversations());
             } else if(conversationType == ProtoConstants.ConversationType.ConversationType_Group){
-                return protoService.getImMemoryStore().getGroupConversations();
+                protoConversationInfos.addAll(protoService.getImMemoryStore().getGroupConversations());
             }
         }
-
-        return new ProtoConversationInfo[0];
+        ProtoConversationInfo[] protoConversationInfosArr = new ProtoConversationInfo[protoConversationInfos.size()];
+        protoConversationInfos.toArray(protoConversationInfosArr);
+        return protoConversationInfosArr;
 
     }
 
@@ -368,20 +363,20 @@ public class JavaProtoLogic {
 //    }
 
     public static  ProtoConversationInfo getConversation(int conversationType, String target, int line){
-        //return protoService.getImMemoryStore().getConversation(conversationType,target,line);
-        int[] conversationTypes = new int[1];
-        int[] lines = new int[1];
-        conversationTypes[0] = conversationType;
-        lines[0] = line;
-        ProtoConversationInfo[] protoConversationInfos = getConversations(conversationTypes,lines);
-        if(protoConversationInfos != null){
-            for(ProtoConversationInfo protoConversationInfo : protoConversationInfos){
-                if(protoConversationInfo.getTarget().equals(target)){
-                    return protoConversationInfo;
-                }
-            }
-        }
-        return new ProtoConversationInfo();
+        return protoService.getImMemoryStore().getConversation(conversationType,target,line);
+//        int[] conversationTypes = new int[1];
+//        int[] lines = new int[1];
+//        conversationTypes[0] = conversationType;
+//        lines[0] = line;
+//        ProtoConversationInfo[] protoConversationInfos = getConversations(conversationTypes,lines);
+//        if(protoConversationInfos != null){
+//            for(ProtoConversationInfo protoConversationInfo : protoConversationInfos){
+//                if(protoConversationInfo.getTarget().equals(target)){
+//                    return protoConversationInfo;
+//                }
+//            }
+//        }
+//        return new ProtoConversationInfo();
     }
 
     public static  ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser){
@@ -541,7 +536,7 @@ public class JavaProtoLogic {
     }
 
     public static void createGroup(String groupId, String groupName, String groupPortrait, String[] memberIds, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback2 callback){
-        logger.i("createGroup groupId "+groupId+" groupName "+groupName +" groupPortrait "+groupPortrait+" memberIds "+memberIds);
+        logger.i("createGroup groupId "+groupId+" groupName "+groupName +" groupPortrait "+groupPortrait+" memberIds "+memberIds+ " notifyMsg "+ (notifyMsg != null));
         protoService.createGroup(groupId,groupName,groupPortrait,memberIds,notifyLines,notifyMsg,callback);
     }
     //- (void)addMembers:(NSArray *)members
