@@ -317,21 +317,19 @@ public class JavaProtoLogic {
         return 0;
     }
 
-//    public static Map<String,Integer> unReadCountMap = new ConcurrentHashMap<>();
-//    public static Map<String,Long> unReadMessageIdMap = new ConcurrentHashMap<>();
-
     public static  ProtoConversationInfo[] getConversations(int[] conversationTypes, int[] lines){
+        logger.i("conversationTypes size "+conversationTypes.length);
         if(lines != null){
             for(int line : lines){
                 logger.i("line is "+line);
             }
         }
         for(int conversationType : conversationTypes){
-            logger.i("conversationType "+conversationType+" line ");
+            logger.i("conversationType "+conversationType);
             if(conversationType == ProtoConstants.ConversationType.ConversationType_Private){
-                return getPrivateConversations();
+                return protoService.getImMemoryStore().getPrivateConversations();
             } else if(conversationType == ProtoConstants.ConversationType.ConversationType_Group){
-
+                return protoService.getImMemoryStore().getGroupConversations();
             }
         }
 
@@ -339,37 +337,38 @@ public class JavaProtoLogic {
 
     }
 
-    public static ProtoConversationInfo[] getPrivateConversations(){
-        String[] friendList = protoService.getMyFriendList(false);
-        if(friendList != null){
-            ProtoConversationInfo[] protoConversationInfos = new ProtoConversationInfo[friendList.length];
-            int i = 0;
-            for(String friend : friendList){
-                ProtoConversationInfo protoConversationInfo = new ProtoConversationInfo();
-                protoConversationInfo.setConversationType(Conversation.ConversationType.Single.ordinal());
-                protoConversationInfo.setLine(0);
-                protoConversationInfo.setTarget(friend);
-                ProtoMessage protoMessage = protoService.getImMemoryStore().getLastMessage(friend);
-                if(protoMessage != null &&(!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
-                        || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent())) ){
-                    protoMessage.setStatus(5);
-                }
-                protoConversationInfo.setLastMessage(protoMessage);
-
-                ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
-                protoUnreadCount.setUnread(protoService.getImMemoryStore().getUnreadCount(friend));
-                logger.i("friend "+friend+" unread "+protoService.getImMemoryStore().getUnreadCount(friend));
-                protoConversationInfo.setUnreadCount(protoUnreadCount);
-                protoConversationInfo.setTimestamp(System.currentTimeMillis());
-                protoConversationInfos[i++] =protoConversationInfo;
-            }
-            return protoConversationInfos;
-        } else {
-            return new ProtoConversationInfo[0];
-        }
-    }
+//    public static ProtoConversationInfo[] getPrivateConversations(){
+//        String[] friendList = protoService.getMyFriendList(false);
+//        if(friendList != null){
+//            ProtoConversationInfo[] protoConversationInfos = new ProtoConversationInfo[friendList.length];
+//            int i = 0;
+//            for(String friend : friendList){
+//                ProtoConversationInfo protoConversationInfo = new ProtoConversationInfo();
+//                protoConversationInfo.setConversationType(Conversation.ConversationType.Single.ordinal());
+//                protoConversationInfo.setLine(0);
+//                protoConversationInfo.setTarget(friend);
+//                ProtoMessage protoMessage = protoService.getImMemoryStore().getLastMessage(friend);
+//                if(protoMessage != null &&(!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
+//                        || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent())) ){
+//                    protoMessage.setStatus(5);
+//                }
+//                protoConversationInfo.setLastMessage(protoMessage);
+//
+//                ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
+//                protoUnreadCount.setUnread(protoService.getImMemoryStore().getUnreadCount(friend));
+//                //logger.i("friend "+friend+" unread "+protoService.getImMemoryStore().getUnreadCount(friend));
+//                protoConversationInfo.setUnreadCount(protoUnreadCount);
+//                protoConversationInfo.setTimestamp(System.currentTimeMillis());
+//                protoConversationInfos[i++] =protoConversationInfo;
+//            }
+//            return protoConversationInfos;
+//        } else {
+//            return new ProtoConversationInfo[0];
+//        }
+//    }
 
     public static  ProtoConversationInfo getConversation(int conversationType, String target, int line){
+        //return protoService.getImMemoryStore().getConversation(conversationType,target,line);
         int[] conversationTypes = new int[1];
         int[] lines = new int[1];
         conversationTypes[0] = conversationType;

@@ -130,8 +130,7 @@ public class ProtoService extends AbstractProtoService {
         WFCMessage.Version request = WFCMessage.Version.newBuilder().setVersion(0).build();
         SimpleFuture<String[]> friendListFuture = sendMessageSync(Signal.PUBLISH,SubSignal.FP,request.toByteArray());
         try {
-            String[] myFriendList = friendListFuture.get(500,TimeUnit.MILLISECONDS);
-            imMemoryStore.setFriendArr(myFriendList);
+            friendListFuture.get(500,TimeUnit.MILLISECONDS);
             return imMemoryStore.getFriendListArr();
         } catch (Exception e) {
             return null;

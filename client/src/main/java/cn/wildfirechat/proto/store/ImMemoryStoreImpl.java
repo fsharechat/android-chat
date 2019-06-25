@@ -12,7 +12,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import cn.wildfirechat.model.Conversation;
+import cn.wildfirechat.model.ProtoConversationInfo;
 import cn.wildfirechat.model.ProtoMessage;
+import cn.wildfirechat.model.ProtoUnreadCount;
+import cn.wildfirechat.proto.ProtoConstants;
 
 public class ImMemoryStoreImpl implements ImMemoryStore{
     Log logger = LoggerFactory.getLogger(ImMemoryStoreImpl.class);
@@ -20,6 +24,8 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     private Map<String,List<ProtoMessage>> protoMessageMap = new ConcurrentHashMap<>();
     private Map<String,Integer> unReadCountMap = new ConcurrentHashMap<>();
     private Map<String,Long> unReadMessageIdMap = new ConcurrentHashMap<>();
+    private Map<String,ProtoConversationInfo> privateConversations = new ConcurrentHashMap<>();
+    private Map<String,ProtoConversationInfo> groupConversations = new ConcurrentHashMap<>();
     @Override
     public List<String> getFriendList() {
         return friendList;
@@ -33,10 +39,13 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     }
 
     @Override
-    public void setFriendArr(String[] friendArr,boolean refresh) {
+    public synchronized void setFriendArr(String[] friendArr,boolean refresh) {
         if(friendArr != null){
+            if(refresh){
+                friendList.clear();
+            }
             for(String friend : friendArr){
-                if(!friendList.contains(friend) || refresh){
+                if(!friendList.contains(friend)){
                     friendList.add(friend);
                 }
             }
@@ -61,7 +70,7 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
 
     @Override
     public void addProtoMessageByTarget(String target, ProtoMessage protoMessage, boolean isPush) {
-        logger.i("target "+target+" add protomessage isPush "+isPush);
+        logger.i("target "+target+" conversationtype "+protoMessage.getConversationType()+" add protomessage isPush "+isPush);
         if((!TextUtils.isEmpty(protoMessage.getContent().getPushContent()) || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent()))){
             //接收到的推送消息
             List<ProtoMessage> protoMessages = protoMessageMap.get(target);
@@ -84,7 +93,9 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
                 //最后一次已读消息id
                 unReadMessageIdMap.put(target,protoMessage.getMessageId() - 1);
             }
-
+            if(protoMessage.getConversationType() == ProtoConstants.ConversationType.ConversationType_Group){
+                createGroupConversation(protoMessage.getTarget());
+            }
         }
     }
 
@@ -125,5 +136,87 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     @Override
     public int getUnreadCount(String target) {
         return unReadCountMap.get(target) == null ? 0 : unReadCountMap.get(target);
+    }
+
+    @Override
+    public void createPrivateConversation(String target) {
+        ProtoConversationInfo protoConversationInfo = new ProtoConversationInfo();
+        protoConversationInfo.setConversationType(Conversation.ConversationType.Single.ordinal());
+        protoConversationInfo.setLine(0);
+        protoConversationInfo.setTarget(target);
+        ProtoMessage protoMessage = getLastMessage(target);
+        if(protoMessage != null &&(!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
+                || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent())) ){
+            protoMessage.setStatus(5);
+        }
+        protoConversationInfo.setLastMessage(protoMessage);
+        ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
+        protoUnreadCount.setUnread(getUnreadCount(target));
+        protoConversationInfo.setUnreadCount(protoUnreadCount);
+        protoConversationInfo.setTimestamp(System.currentTimeMillis());
+        privateConversations.put(target,protoConversationInfo);
+    }
+
+    @Override
+    public ProtoConversationInfo[] getPrivateConversations() {
+        for(String friend : getFriendList()){
+            if(getLastMessage(friend) != null){
+                createPrivateConversation(friend);
+            }
+        }
+        if(privateConversations != null){
+            ProtoConversationInfo[] protoConversationInfos = new ProtoConversationInfo[privateConversations.size()];
+            List<ProtoConversationInfo> protoConversationInfoList = new ArrayList<>();
+            for(Map.Entry<String,ProtoConversationInfo> entry : privateConversations.entrySet()){
+                protoConversationInfoList.add(entry.getValue());
+            }
+            protoConversationInfoList.toArray(protoConversationInfos);
+            return protoConversationInfos;
+        }
+
+        return new ProtoConversationInfo[0];
+    }
+
+    @Override
+    public void createGroupConversation(String groupId) {
+        ProtoConversationInfo protoConversationInfo = new ProtoConversationInfo();
+        protoConversationInfo.setConversationType(Conversation.ConversationType.Group.ordinal());
+        protoConversationInfo.setLine(0);
+        protoConversationInfo.setTarget(groupId);
+        ProtoMessage protoMessage = getLastMessage(groupId);
+        if(protoMessage != null &&(!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
+                || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent())) ){
+            protoMessage.setStatus(5);
+        }
+        protoConversationInfo.setLastMessage(protoMessage);
+        ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
+        protoUnreadCount.setUnread(getUnreadCount(groupId));
+        protoConversationInfo.setUnreadCount(protoUnreadCount);
+        protoConversationInfo.setTimestamp(System.currentTimeMillis());
+        groupConversations.put(groupId,protoConversationInfo);
+    }
+
+    @Override
+    public ProtoConversationInfo[] getGroupConversations() {
+        if(groupConversations != null){
+            ProtoConversationInfo[] protoConversationInfos = new ProtoConversationInfo[groupConversations.size()];
+            List<ProtoConversationInfo> protoConversationInfoList = new ArrayList<>();
+            for(Map.Entry<String,ProtoConversationInfo> entry : groupConversations.entrySet()){
+                protoConversationInfoList.add(entry.getValue());
+            }
+            protoConversationInfoList.toArray(protoConversationInfos);
+            return protoConversationInfos;
+        }
+        return new ProtoConversationInfo[0];
+    }
+
+    @Override
+    public ProtoConversationInfo getConversation(int conversationType, String target, int line) {
+        if(conversationType == ProtoConstants.ConversationType.ConversationType_Private){
+            return privateConversations.get(target);
+        } else if(conversationType == ProtoConstants.ConversationType.ConversationType_Group){
+            return groupConversations.get(target);
+        }
+        return new ProtoConversationInfo();
     }
 }

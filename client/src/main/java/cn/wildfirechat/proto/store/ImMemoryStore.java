@@ -3,6 +3,7 @@ package cn.wildfirechat.proto.store;
 
 import java.util.List;
 
+import cn.wildfirechat.model.ProtoConversationInfo;
 import cn.wildfirechat.model.ProtoMessage;
 
 public interface ImMemoryStore {
@@ -18,5 +19,9 @@ public interface ImMemoryStore {
     long getTargetLastMessageId(String targetId);
     void clearUnreadStatus(int conversationType, String target, int line);
     int getUnreadCount(String target);
-//    void addUnReadMessageByTarget(String target,ProtoMessage protoMessage);
+    void createPrivateConversation(String target);
+    ProtoConversationInfo[] getPrivateConversations();
+    void createGroupConversation(String groupId);
+    ProtoConversationInfo[] getGroupConversations();
+    ProtoConversationInfo getConversation(int conversationType, String target, int line);
 }

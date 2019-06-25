@@ -6,10 +6,6 @@ import com.comsince.github.push.Header;
 import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
 import com.google.protobuf.InvalidProtocolBufferException;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.proto.JavaProtoLogic;
 import cn.wildfirechat.proto.ProtoService;
@@ -17,8 +13,6 @@ import cn.wildfirechat.proto.WFCMessage;
 
 public class ReceiveMessageHandler extends AbstractMessageHandler {
 
-    private int currentMessageCount = 0;
-    public static Map<String,ProtoMessage> protoMessageMap = new ConcurrentHashMap<>();
     public ReceiveMessageHandler(ProtoService protoService) {
         super(protoService);
     }

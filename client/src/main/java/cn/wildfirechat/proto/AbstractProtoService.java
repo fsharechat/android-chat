@@ -294,13 +294,19 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         messageResponse.setTimestamp(message.getServerTimestamp());
         WFCMessage.Conversation conversation  = message.getConversation();
         messageResponse.setConversationType(conversation.getType());
-        if(!message.getFromUser().equals(userName)){
-            messageResponse.setTarget(message.getFromUser());
-            messageResponse.setFrom(message.getConversation().getTarget());
-        } else {
-            messageResponse.setTarget(message.getConversation().getTarget());
-            messageResponse.setFrom(message.getFromUser());
+
+        messageResponse.setTarget(message.getConversation().getTarget());
+        messageResponse.setFrom(message.getFromUser());
+        if(conversation.getType() == ProtoConstants.ConversationType.ConversationType_Private){
+            if(!message.getFromUser().equals(userName)){
+                messageResponse.setTarget(message.getFromUser());
+                messageResponse.setFrom(message.getConversation().getTarget());
+            } else {
+                messageResponse.setTarget(message.getConversation().getTarget());
+                messageResponse.setFrom(message.getFromUser());
+            }
         }
+
 
         messageResponse.setLine(conversation.getLine());
         WFCMessage.MessageContent messageContent = message.getContent();
