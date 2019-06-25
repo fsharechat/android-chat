@@ -8,6 +8,7 @@ public class RequestInfo {
     private SubSignal subSignal;
     private Class type;
     private Object callback;
+    private String callbackParam;
 
     public RequestInfo(Signal signal, SubSignal subSignal, Class type, Object callback) {
         this.signal = signal;
@@ -46,5 +47,13 @@ public class RequestInfo {
 
     public void setCallback(Object callback) {
         this.callback = callback;
+    }
+
+    public String getCallbackParam() {
+        return callbackParam;
+    }
+
+    public void setCallbackParam(String callbackParam) {
+        this.callbackParam = callbackParam;
     }
 }

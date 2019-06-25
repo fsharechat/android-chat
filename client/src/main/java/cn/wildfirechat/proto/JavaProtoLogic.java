@@ -317,10 +317,29 @@ public class JavaProtoLogic {
         return 0;
     }
 
-    public static Map<String,Integer> unReadCountMap = new ConcurrentHashMap<>();
-    public static Map<String,Long> unReadMessageIdMap = new ConcurrentHashMap<>();
+//    public static Map<String,Integer> unReadCountMap = new ConcurrentHashMap<>();
+//    public static Map<String,Long> unReadMessageIdMap = new ConcurrentHashMap<>();
 
     public static  ProtoConversationInfo[] getConversations(int[] conversationTypes, int[] lines){
+        if(lines != null){
+            for(int line : lines){
+                logger.i("line is "+line);
+            }
+        }
+        for(int conversationType : conversationTypes){
+            logger.i("conversationType "+conversationType+" line ");
+            if(conversationType == ProtoConstants.ConversationType.ConversationType_Private){
+                return getPrivateConversations();
+            } else if(conversationType == ProtoConstants.ConversationType.ConversationType_Group){
+
+            }
+        }
+
+        return new ProtoConversationInfo[0];
+
+    }
+
+    public static ProtoConversationInfo[] getPrivateConversations(){
         String[] friendList = protoService.getMyFriendList(false);
         if(friendList != null){
             ProtoConversationInfo[] protoConversationInfos = new ProtoConversationInfo[friendList.length];
@@ -330,28 +349,32 @@ public class JavaProtoLogic {
                 protoConversationInfo.setConversationType(Conversation.ConversationType.Single.ordinal());
                 protoConversationInfo.setLine(0);
                 protoConversationInfo.setTarget(friend);
-                ProtoMessage protoMessage = ReceiveMessageHandler.protoMessageMap.get(friend);
+                ProtoMessage protoMessage = protoService.getImMemoryStore().getLastMessage(friend);
                 if(protoMessage != null &&(!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
-                || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent())) ){
+                        || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent())) ){
                     protoMessage.setStatus(5);
                 }
                 protoConversationInfo.setLastMessage(protoMessage);
 
                 ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
-                protoUnreadCount.setUnread(unReadCountMap.get(friend)!=null ?unReadCountMap.get(friend):0);
-                ProtoService.log.i("friend "+friend+" unread "+unReadCountMap.get(friend));
+                protoUnreadCount.setUnread(protoService.getImMemoryStore().getUnreadCount(friend));
+                logger.i("friend "+friend+" unread "+protoService.getImMemoryStore().getUnreadCount(friend));
                 protoConversationInfo.setUnreadCount(protoUnreadCount);
                 protoConversationInfo.setTimestamp(System.currentTimeMillis());
                 protoConversationInfos[i++] =protoConversationInfo;
             }
             return protoConversationInfos;
+        } else {
+            return new ProtoConversationInfo[0];
         }
-        return new ProtoConversationInfo[0];
-
     }
 
     public static  ProtoConversationInfo getConversation(int conversationType, String target, int line){
-        ProtoConversationInfo[] protoConversationInfos = getConversations(null,null);
+        int[] conversationTypes = new int[1];
+        int[] lines = new int[1];
+        conversationTypes[0] = conversationType;
+        lines[0] = line;
+        ProtoConversationInfo[] protoConversationInfos = getConversations(conversationTypes,lines);
         if(protoConversationInfos != null){
             for(ProtoConversationInfo protoConversationInfo : protoConversationInfos){
                 if(protoConversationInfo.getTarget().equals(target)){
@@ -389,8 +412,7 @@ public class JavaProtoLogic {
     }
 
     public static void clearUnreadStatus(int conversationType, String target, int line){
-        unReadCountMap.put(target,0);
-        unReadMessageIdMap.put(target,0l);
+        protoService.getImMemoryStore().clearUnreadStatus(conversationType,target,line);
     }
 
     public static void clearAllUnreadStatus(){}
@@ -519,17 +541,10 @@ public class JavaProtoLogic {
         return new ProtoGroupSearchResult[0];
     }
 
-
-    //- (void)createGroup:(NSString *)groupId
-//               name:(NSString *)groupName
-//           portrait:(NSString *)groupPortrait
-//            members:(NSArray *)groupMembers
-//        notifyLines:(NSArray<NSNumber *> *)notifyLines
-//      notifyContent:(WFCCMessageContent *)notifyContent
-//            success:(void(^)(NSString *groupId))successBlock
-//              error:(void(^)(int error_code))errorBlock;
-
-    public static void createGroup(String groupId, String groupName, String groupPortrait, String[] memberIds, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback2 callback){}
+    public static void createGroup(String groupId, String groupName, String groupPortrait, String[] memberIds, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback2 callback){
+        logger.i("createGroup groupId "+groupId+" groupName "+groupName +" groupPortrait "+groupPortrait+" memberIds "+memberIds);
+        protoService.createGroup(groupId,groupName,groupPortrait,memberIds,notifyLines,notifyMsg,callback);
+    }
     //- (void)addMembers:(NSArray *)members
 //           toGroup:(NSString *)groupId
 //       notifyLines:(NSArray<NSNumber *> *)notifyLines

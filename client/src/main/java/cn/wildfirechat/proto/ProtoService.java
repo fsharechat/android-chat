@@ -1,91 +1,47 @@
 package cn.wildfirechat.proto;
-
-import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
-import com.alibaba.fastjson.JSON;
-import com.comsince.github.client.AndroidNIOClient;
-import com.comsince.github.client.ConnectStatus;
-import com.comsince.github.client.PushMessageCallback;
-import com.comsince.github.core.ByteBufferList;
 import com.comsince.github.core.future.SimpleFuture;
-import com.comsince.github.logger.Log;
-import com.comsince.github.logger.LoggerFactory;
-import com.comsince.github.push.Header;
 import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
-import com.comsince.github.push.util.AES;
-import com.comsince.github.push.util.Base64;
-
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import cn.wildfirechat.alarm.AlarmWrapper;
-import cn.wildfirechat.alarm.Timer;
 import cn.wildfirechat.model.ProtoFriendRequest;
 import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoMessageContent;
 import cn.wildfirechat.model.ProtoUserInfo;
 import cn.wildfirechat.proto.handler.AddFriendRequestHandler;
 import cn.wildfirechat.proto.handler.ConnectAckMessageHandler;
+import cn.wildfirechat.proto.handler.CreateGroupHandler;
 import cn.wildfirechat.proto.handler.FriendPullHandler;
 import cn.wildfirechat.proto.handler.FriendRequestHandler;
 import cn.wildfirechat.proto.handler.GetUserInfoMessageHanlder;
 import cn.wildfirechat.proto.handler.HandlerFriendRequestHandler;
-import cn.wildfirechat.proto.handler.MessageHandler;
 import cn.wildfirechat.proto.handler.NotifyFriendHandler;
 import cn.wildfirechat.proto.handler.NotifyFriendRequestHandler;
 import cn.wildfirechat.proto.handler.NotifyMessageHandler;
 import cn.wildfirechat.proto.handler.ReceiveMessageHandler;
-import cn.wildfirechat.proto.handler.RequestInfo;
 import cn.wildfirechat.proto.handler.SearchUserResultMessageHandler;
 import cn.wildfirechat.proto.handler.SendMessageHandler;
-import cn.wildfirechat.proto.model.ConnectMessage;
+import cn.wildfirechat.proto.store.ImMemoryStore;
+import cn.wildfirechat.proto.store.ImMemoryStoreImpl;
 
-import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusConnected;
-import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusConnecting;
-import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusUnconnected;
-import static com.tencent.mars.comm.PlatformComm.context;
+public class ProtoService extends AbstractProtoService {
 
-public class ProtoService implements PushMessageCallback {
-    public static Log log = LoggerFactory.getLogger(ProtoService.class);
-    private String userName;
-    private String token;
-    private AndroidNIOClient androidNIOClient;
-
-    private List<MessageHandler> messageHandlers = new ArrayList<>();
-    public ConcurrentHashMap<Integer, RequestInfo> requestMap = new ConcurrentHashMap<>();
-    public ConcurrentHashMap<Integer, SimpleFuture> futureMap = new ConcurrentHashMap<>();
-    public ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
-
-    public String[] myFriendList;
-    private volatile boolean userDisconnect = false;
-    private AlarmWrapper alarmWrapper;
-    Timer heartbeatTimer;
-    Timer reconnectTimer;
-    int interval = 0;
+    protected ImMemoryStore imMemoryStore;
 
     public ProtoService(AlarmWrapper alarmWrapper){
-        this.alarmWrapper = alarmWrapper;
+        super(alarmWrapper);
+        imMemoryStore = new ImMemoryStoreImpl();
         initHandlers();
     }
 
-    public void connect(String host, int shortPort){
-        userDisconnect = false;
-        androidNIOClient = new AndroidNIOClient(host,shortPort);
-        androidNIOClient.setPushMessageCallback(this);
-        reconnect();
-    }
-
-    public void stopProtoService(){
-        if(androidNIOClient != null){
-            androidNIOClient.setPushMessageCallback(null);
-            androidNIOClient.close();
-            androidNIOClient = null;
-        }
+    public ImMemoryStore getImMemoryStore(){
+        return imMemoryStore;
     }
 
     private void initHandlers(){
@@ -101,171 +57,7 @@ public class ProtoService implements PushMessageCallback {
         messageHandlers.add(new ReceiveMessageHandler(this));
         messageHandlers.add(new NotifyMessageHandler(this));
         messageHandlers.add(new NotifyFriendRequestHandler(this));
-    }
-
-    public void setUserName(String userName){
-        this.userName = userName;
-    }
-
-    public String getUserName(){
-        return userName;
-    }
-
-    public void setToken(String token){
-        this.token = token;
-    }
-
-
-    @Override
-    public void receiveMessage(Header header, ByteBufferList byteBufferList) {
-        if(Signal.PING == header.getSignal()){
-            schedule();
-        }
-         for(MessageHandler messageHandler : messageHandlers){
-             if(messageHandler.match(header)){
-                 messageHandler.processMessage(header,byteBufferList);
-                 break;
-             }
-         }
-    }
-
-    @Override
-    public void receiveException(Exception e) {
-        log.e("comsince receive exception ",e);
-        JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusUnconnected);
-        cancelHeartTimer();
-        if(!userDisconnect){
-            alarmWrapper.schedule(reconnectTimer =
-                    new Timer.Builder().period(10 * 1000)
-                            .wakeup(true)
-                            .action(new Runnable() {
-                                @Override
-                                public void run() {
-                                    log.i("receiveException start reconnect");
-                                    reconnect();
-                                }
-                            }).build());
-        }
-
-    }
-
-    @Override
-    public void onConnected() {
-        log.i("comsince connected");
-       JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnected);
-       cancelReconnectTimer();
-       sendConnectMessage();
-       schedule();
-    }
-
-    public void reconnect(){
-        if(!userDisconnect && androidNIOClient != null){
-            androidNIOClient.post(new Runnable() {
-                @Override
-                public void run() {
-                    log.i("reconnect status "+androidNIOClient.connectStatus);
-                    switch (androidNIOClient.connectStatus){
-                        case CONNECTING:
-                            cancelReconnectTimer();
-                            cancelHeartTimer();
-                            androidNIOClient.close();
-                            JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnecting);
-                            androidNIOClient.connect();
-                            break;
-                        case CONNECTED:
-                            break;
-                        case DISCONNECT:
-                            cancelReconnectTimer();
-                            cancelHeartTimer();
-                            JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnecting);
-                            androidNIOClient.connect();
-                            break;
-                    }
-
-                }
-            },0);
-        }
-    }
-
-    private void schedule(){
-        alarmWrapper.schedule(heartbeatTimer =
-                new Timer.Builder().period((30 + 30 * interval) * 1000)
-                        .wakeup(true)
-                        .action(new Runnable() {
-                            @Override
-                            public void run() {
-                                long current = (30 + 30 * ++interval) * 1000;
-                                if(current > 8 * 60 * 1000){
-                                    current = 8 * 60 * 1000;
-                                }
-                                androidNIOClient.heart(current);
-                            }
-                        }).build());
-    }
-
-    private void cancelHeartTimer(){
-        interval = 0;
-        if(heartbeatTimer != null){
-            alarmWrapper.cancel(heartbeatTimer);
-        }
-    }
-
-    private void cancelReconnectTimer(){
-        if(reconnectTimer != null){
-            alarmWrapper.cancel(reconnectTimer);
-        }
-    }
-
-    private void sendConnectMessage(){
-        ConnectMessage connectMessage = new ConnectMessage();
-        connectMessage.setUserName(userName);
-        byte[] byteToken = Base64.decode(token);
-        byte[] aesToken = AES.AESDecrypt(byteToken,"",false);
-        log.i("sendConnectMessage userName "+userName+" token "+token+" aesToken "+aesToken);
-        String allToken = new String(aesToken);
-
-        String pwd = allToken.substring(0,allToken.indexOf("|"));
-        allToken = allToken.substring(allToken.indexOf("|")+1);
-        String secret = allToken.substring(0,allToken.indexOf("|"));
-        log.i("pwd->"+pwd+ " secret-> "+secret);
-        //利用secret加密pwd
-        byte[] pwdAES = AES.AESEncrypt(Base64.decode(pwd),secret);
-        log.i("base64 pwd encrypt->"+Base64.encode(pwdAES));
-        connectMessage.setPassword(Base64.encode(pwdAES));
-        connectMessage.setClientIdentifier(PreferenceManager.getDefaultSharedPreferences(context).getString("mars_core_uid", ""));
-        log.i("send connectMessage "+JSON.toJSONString(connectMessage));
-        sendMessage(Signal.CONNECT,SubSignal.NONE, JSON.toJSONString(connectMessage).getBytes(),null);
-    }
-
-    private void sendMessage(Signal signal,SubSignal subSignal,byte[] message,Object callback){
-        scheduledExecutorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                int messageId = PreferenceManager.getDefaultSharedPreferences(context).getInt("message_id",0);
-                log.i("sendMessage send signal "+signal+" subSignal "+subSignal+" messageId "+messageId);
-                androidNIOClient.sendMessage(signal, subSignal,messageId, message);
-                if(callback != null){
-                    RequestInfo requestInfo = new RequestInfo(signal,subSignal,callback.getClass(),callback);
-                    requestMap.put(messageId,requestInfo);
-                }
-                PreferenceManager.getDefaultSharedPreferences(context).edit().putInt("message_id",++messageId).apply();
-            }
-        });
-    }
-
-    private SimpleFuture sendMessageSync(Signal signal,SubSignal subSignal,byte[] message){
-        SimpleFuture simpleFuture = new SimpleFuture();
-        scheduledExecutorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                int messageId = PreferenceManager.getDefaultSharedPreferences(context).getInt("message_id",0);
-                log.i("sendMessageSync send signal "+signal+" subSignal "+subSignal+" messageId "+messageId);
-                futureMap.put(messageId,simpleFuture);
-                androidNIOClient.sendMessage(signal, subSignal,messageId, message);
-                PreferenceManager.getDefaultSharedPreferences(context).edit().putInt("message_id",++messageId).apply();
-            }
-        });
-        return simpleFuture;
+        messageHandlers.add(new CreateGroupHandler(this));
     }
 
     public void searchUser(String keyword, JavaProtoLogic.ISearchUserCallback callback){
@@ -277,12 +69,6 @@ public class ProtoService implements PushMessageCallback {
         sendMessage(Signal.PUBLISH,SubSignal.US,request.toByteArray(),callback);
     }
 
-    public void disConnect(int clearSession){
-        userDisconnect = true;
-        byte[] body = new byte[1];
-        body[0] = (byte) clearSession;
-        sendMessage(Signal.DISCONNECT,SubSignal.NONE,body,null);
-    }
 
     public ProtoUserInfo getUserInfo(String userId, String groupId, boolean refresh){
         WFCMessage.PullUserRequest request = WFCMessage.PullUserRequest.newBuilder()
@@ -332,55 +118,56 @@ public class ProtoService implements PushMessageCallback {
         sendMessage(Signal.PUBLISH,SubSignal.FHR,handleFriendRequest.toByteArray(),callback);
     }
 
+    /**
+     * 获取用户朋友列表
+     * @param refresh 是否强制刷新
+     * */
     public String[] getMyFriendList(boolean refresh){
-        if(!refresh && myFriendList != null){
-            return myFriendList;
+        if(!refresh && imMemoryStore.hasFriend()){
+            return imMemoryStore.getFriendListArr();
         }
 
         WFCMessage.Version request = WFCMessage.Version.newBuilder().setVersion(0).build();
         SimpleFuture<String[]> friendListFuture = sendMessageSync(Signal.PUBLISH,SubSignal.FP,request.toByteArray());
         try {
-            myFriendList = friendListFuture.get(500,TimeUnit.MILLISECONDS);
-            return myFriendList;
+            String[] myFriendList = friendListFuture.get(500,TimeUnit.MILLISECONDS);
+            imMemoryStore.setFriendArr(myFriendList);
+            return imMemoryStore.getFriendListArr();
         } catch (Exception e) {
             return null;
         }
     }
 
     public boolean isMyFriend(String userId){
-        if(myFriendList != null){
-            for(String friend : myFriendList){
-                if(friend.endsWith(userId)){
-                    return true;
-                }
-            }
-        }
-        return false;
+        return imMemoryStore.isMyFriend(userId);
     }
 
-    public long startMessageId = 0;
     public ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser){
-        log.i("startMessageId "+startMessageId+"conversationType "+conversationType+" target "+target+" line "+line +" count "+" messageId "+startMessageId+" withuser "+withUser);
-        WFCMessage.PullMessageRequest pullMessageRequest = WFCMessage.PullMessageRequest.newBuilder()
-                .setId(startMessageId)
-                .setType(conversationType)
-                .build();
-        SimpleFuture<ProtoMessage[]> pullMessageFuture = sendMessageSync(Signal.PUBLISH,SubSignal.MP,pullMessageRequest.toByteArray());
-        try {
-            ProtoMessage[] protoMessages = pullMessageFuture.get(500,TimeUnit.MILLISECONDS);
-            List<ProtoMessage> protoMessageList = new ArrayList<>();
-            for(ProtoMessage message: protoMessages){
-                if(message.getTarget().equals(target)){
-                    protoMessageList.add(message);
-                }
-            }
-            ProtoMessage[] result = new ProtoMessage[protoMessageList.size()];
-            protoMessageList.toArray(result);
-            return result;
-        } catch (Exception e) {
-            e.printStackTrace();
+        log.i("conversationType "+conversationType+" target "+target+" line "+line +" fromIndex "+fromIndex+" count "+" withuser "+withUser);
+        ProtoMessage[] protoMessages = null;
+        if(!TextUtils.isEmpty(target)){
+            protoMessages = imMemoryStore.getMessages(conversationType,target);
         }
-        return new ProtoMessage[0];
+
+        if(protoMessages == null){
+            long targetLastMessageId = imMemoryStore.getTargetLastMessageId(target);
+            log.i("targetLastMessageId "+targetLastMessageId);
+            WFCMessage.PullMessageRequest pullMessageRequest = WFCMessage.PullMessageRequest.newBuilder()
+                    .setId(targetLastMessageId)
+                    .setType(conversationType)
+                    .build();
+            SimpleFuture<ProtoMessage[]> pullMessageFuture = sendMessageSync(Signal.PUBLISH,SubSignal.MP,pullMessageRequest.toByteArray());
+            try {
+                pullMessageFuture.get(500,TimeUnit.MILLISECONDS);
+                protoMessages = imMemoryStore.getMessages(conversationType,target);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+
+
+        return protoMessages;
     }
 
     public void getRemoteMessages(int conversationType, String target, int line, long beforeMessageUid, int count, JavaProtoLogic.ILoadRemoteMessagesCallback callback){
@@ -389,6 +176,7 @@ public class ProtoService implements PushMessageCallback {
 
     public void sendMessage(ProtoMessage msg, int expireDuration, JavaProtoLogic.ISendMessageCallback callback){
         WFCMessage.Message sendMessage = convertWFCMessage(msg);
+        imMemoryStore.addProtoMessageByTarget(msg.getTarget(),msg,false);
         sendMessage(Signal.PUBLISH,SubSignal.MS,sendMessage.toByteArray(),callback);
     }
 
@@ -402,73 +190,45 @@ public class ProtoService implements PushMessageCallback {
     }
 
 
-
-
-    public ProtoUserInfo convertUser(WFCMessage.User user){
-        ProtoUserInfo protoUserInfo = new ProtoUserInfo();
-        protoUserInfo.setUid(user.getUid());
-        protoUserInfo.setEmail(user.getEmail());
-        protoUserInfo.setDisplayName(user.getDisplayName());
-        protoUserInfo.setMobile(user.getMobile());
-        protoUserInfo.setName(user.getName());
-        protoUserInfo.setAddress(user.getAddress());
-        return protoUserInfo;
-    }
-
-
-    public ProtoMessage convertProtoMessage(WFCMessage.Message message){
-        ProtoMessage messageResponse = new ProtoMessage();
-        //log.i("current user "+userName +" fromuser "+message.getFromUser()+" target "+message.getToUser() +"message "+message.getContent().getSearchableContent());
-        if(message.getFromUser().equals(userName)){
-            messageResponse.setDirection(0);
-        } else {
-            messageResponse.setDirection(1);
-        }
-        messageResponse.setMessageId(message.getMessageId());
-        messageResponse.setTimestamp(message.getServerTimestamp());
-        WFCMessage.Conversation conversation  = message.getConversation();
-        messageResponse.setConversationType(conversation.getType());
-        if(!message.getFromUser().equals(userName)){
-            messageResponse.setTarget(message.getFromUser());
-            messageResponse.setFrom(message.getConversation().getTarget());
-        } else {
-            messageResponse.setTarget(message.getConversation().getTarget());
-            messageResponse.setFrom(message.getFromUser());
-        }
-
-        messageResponse.setLine(conversation.getLine());
-        WFCMessage.MessageContent messageContent = message.getContent();
-        ProtoMessageContent messageConentResponse = new ProtoMessageContent();
-        messageConentResponse.setType(messageContent.getType());
-        messageConentResponse.setContent(messageContent.getContent());
-        messageConentResponse.setPushContent(message.getContent().getPushContent());
-        messageConentResponse.setSearchableContent(messageContent.getSearchableContent());
-        messageResponse.setContent(messageConentResponse);
-        return messageResponse;
-    }
-
-    public WFCMessage.Message convertWFCMessage(ProtoMessage messageResponse){
-        WFCMessage.Message.Builder builder = WFCMessage.Message.newBuilder();
-        ProtoService.log.i("fromuser "+messageResponse.getFrom()+" target "+messageResponse.getTarget() +
-                " content type "+messageResponse.getContent().getType()+" tos "+messageResponse.getTos()+"direct "+messageResponse.getDirection()
-                + "status "+messageResponse.getStatus());
-        builder.setFromUser(messageResponse.getFrom());
-        WFCMessage.Conversation conversation = WFCMessage.Conversation.newBuilder()
-                .setType(messageResponse.getConversationType())
-                .setLine(messageResponse.getLine())
-                .setTarget(messageResponse.getTarget())
+    /**
+     * 创建群组
+     * */
+    public void createGroup(String groupId, String groupName, String groupPortrait, String[] memberIds, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback2 callback){
+        WFCMessage.GroupInfo groupInfo = WFCMessage.GroupInfo.newBuilder()
+                .setName(groupName)
+                .setTargetId(TextUtils.isEmpty(groupId)? "":groupId)
+                .setPortrait(TextUtils.isEmpty(groupPortrait)? "":groupPortrait)
+                .setType(ProtoConstants.GroupType.GroupType_Free)
                 .build();
-        builder.setConversation(conversation);
-        WFCMessage.MessageContent.Builder build = WFCMessage.MessageContent.newBuilder();
-        build.setType(messageResponse.getContent().getType());
-        if(!TextUtils.isEmpty(messageResponse.getContent().getSearchableContent())){
-            build.setSearchableContent(messageResponse.getContent().getSearchableContent());
+
+        WFCMessage.Group.Builder groupBuilder = WFCMessage.Group.newBuilder();
+        groupBuilder.setGroupInfo(groupInfo);
+        if(memberIds != null){
+            for(String memberId : memberIds){
+                WFCMessage.GroupMember member = WFCMessage.GroupMember.newBuilder()
+                        .setMemberId(memberId)
+                        .setType(memberId.equals(getUserName())? ProtoConstants.GroupMemberType.GroupMemberType_Owner: ProtoConstants.GroupMemberType.GroupMemberType_Normal)
+                        .build();
+                groupBuilder.addMembers(member);
+            }
         }
-        if(!TextUtils.isEmpty(messageResponse.getContent().getPushContent())){
-            build.setPushContent(messageResponse.getContent().getPushContent());
+        List<Integer> lines = new ArrayList<>();
+        if(notifyLines != null){
+            for(int line : notifyLines){
+                lines.add(line);
+            }
         }
-        builder.setContent(build.build());
-        return builder.build();
+        WFCMessage.CreateGroupRequest.Builder createGroupRequestBuilder = WFCMessage.CreateGroupRequest.newBuilder();
+        createGroupRequestBuilder.setGroup(groupBuilder.build());
+        WFCMessage.MessageContent messageContent = convert2WfcMessageContent(notifyMsg);
+        if(messageContent != null){
+            createGroupRequestBuilder.setNotifyContent(messageContent);
+        }
+        createGroupRequestBuilder.addAllToLine(lines);
+        sendMessage(Signal.PUBLISH,SubSignal.GC, createGroupRequestBuilder.build().toByteArray(),callback);
     }
+
+
+
 
 }

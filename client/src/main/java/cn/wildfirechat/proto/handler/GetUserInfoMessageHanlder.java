@@ -13,7 +13,7 @@ import cn.wildfirechat.model.ProtoUserInfo;
 import cn.wildfirechat.proto.ProtoService;
 import cn.wildfirechat.proto.WFCMessage;
 
-public class GetUserInfoMessageHanlder extends AbstractMessagHandler{
+public class GetUserInfoMessageHanlder extends AbstractMessageHandler {
     Log log = LoggerFactory.getLogger(GetUserInfoMessageHanlder.class);
 
     public GetUserInfoMessageHanlder(ProtoService protoService) {

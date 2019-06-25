@@ -13,7 +13,7 @@ import cn.wildfirechat.proto.JavaProtoLogic;
 import cn.wildfirechat.proto.ProtoService;
 import cn.wildfirechat.proto.WFCMessage;
 
-public class SearchUserResultMessageHandler extends AbstractMessagHandler{
+public class SearchUserResultMessageHandler extends AbstractMessageHandler {
     private static final Log log  = LoggerFactory.getLogger(SearchUserResultMessageHandler.class);
 
     public SearchUserResultMessageHandler(ProtoService protoService) {

@@ -8,7 +8,7 @@ import com.comsince.github.push.SubSignal;
 import cn.wildfirechat.proto.JavaProtoLogic;
 import cn.wildfirechat.proto.ProtoService;
 
-public class HandlerFriendRequestHandler extends AbstractMessagHandler{
+public class HandlerFriendRequestHandler extends AbstractMessageHandler {
     public HandlerFriendRequestHandler(ProtoService protoService) {
         super(protoService);
     }

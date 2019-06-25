@@ -9,7 +9,7 @@ import com.comsince.github.push.SubSignal;
 import cn.wildfirechat.proto.JavaProtoLogic;
 import cn.wildfirechat.proto.ProtoService;
 
-public class AddFriendRequestHandler extends AbstractMessagHandler{
+public class AddFriendRequestHandler extends AbstractMessageHandler {
     Log log = LoggerFactory.getLogger(AddFriendRequestHandler.class);
 
     public AddFriendRequestHandler(ProtoService protoService) {

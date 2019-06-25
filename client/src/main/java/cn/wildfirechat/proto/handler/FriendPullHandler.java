@@ -9,14 +9,11 @@ import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
 import com.google.protobuf.InvalidProtocolBufferException;
 
-import java.util.logging.Logger;
-
-import cn.wildfirechat.model.Conversation;
 import cn.wildfirechat.proto.JavaProtoLogic;
 import cn.wildfirechat.proto.ProtoService;
 import cn.wildfirechat.proto.WFCMessage;
 
-public class FriendPullHandler extends AbstractMessagHandler{
+public class FriendPullHandler extends AbstractMessageHandler {
     private Log log = LoggerFactory.getLogger(FriendPullHandler.class);
     public FriendPullHandler(ProtoService protoService) {
         super(protoService);
@@ -43,8 +40,7 @@ public class FriendPullHandler extends AbstractMessagHandler{
 
             friendListFuture.setComplete(friendList);
             if(friendList.length != 0){
-                log.i("update friend list "+friendList[0]);
-                protoService.myFriendList = friendList;
+                protoService.getImMemoryStore().setFriendArr(friendList,true);
                 JavaProtoLogic.onFriendListUpdated(friendList);
             }
         } catch (InvalidProtocolBufferException e) {

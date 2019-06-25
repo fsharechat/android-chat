@@ -8,12 +8,11 @@ import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
 import com.google.protobuf.InvalidProtocolBufferException;
 
-import cn.wildfirechat.model.FriendRequest;
 import cn.wildfirechat.model.ProtoFriendRequest;
 import cn.wildfirechat.proto.ProtoService;
 import cn.wildfirechat.proto.WFCMessage;
 
-public class FriendRequestHandler extends AbstractMessagHandler{
+public class FriendRequestHandler extends AbstractMessageHandler {
     Log log = LoggerFactory.getLogger(FriendRequestHandler.class);
     public FriendRequestHandler(ProtoService protoService) {
         super(protoService);

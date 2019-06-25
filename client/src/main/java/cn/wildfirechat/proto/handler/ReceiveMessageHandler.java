@@ -1,7 +1,5 @@
 package cn.wildfirechat.proto.handler;
 
-import android.text.TextUtils;
-
 import com.comsince.github.core.ByteBufferList;
 import com.comsince.github.core.future.SimpleFuture;
 import com.comsince.github.push.Header;
@@ -9,9 +7,6 @@ import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
 import com.google.protobuf.InvalidProtocolBufferException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -20,7 +15,7 @@ import cn.wildfirechat.proto.JavaProtoLogic;
 import cn.wildfirechat.proto.ProtoService;
 import cn.wildfirechat.proto.WFCMessage;
 
-public class ReceiveMessageHandler extends AbstractMessagHandler {
+public class ReceiveMessageHandler extends AbstractMessageHandler {
 
     private int currentMessageCount = 0;
     public static Map<String,ProtoMessage> protoMessageMap = new ConcurrentHashMap<>();
@@ -45,30 +40,8 @@ public class ReceiveMessageHandler extends AbstractMessagHandler {
                 for(int i = 0 ;i<pullMessageResult.getMessageCount();i++){
                     protoMessages[i] = protoService.convertProtoMessage(pullMessageResult.getMessage(i));
 
+                    protoService.getImMemoryStore().addProtoMessageByTarget(protoMessages[i].getTarget(),protoMessages[i],protoService.futureMap.get(header.getMessageId()) == null);
 
-                    protoMessageMap.put(protoMessages[i].getTarget(),protoMessages[i]);
-                    ProtoService.log.i("receive promessage "+protoMessages[i].getTarget());
-                    if(!TextUtils.isEmpty(protoMessages[i].getContent().getPushContent())
-                            || !TextUtils.isEmpty(protoMessages[i].getContent().getSearchableContent())
-                            && protoService.futureMap.get(header.getMessageId()) == null){
-                        if(JavaProtoLogic.unReadMessageIdMap.get(protoMessages[i].getTarget()) == null){
-                            JavaProtoLogic.unReadMessageIdMap.put(protoMessages[i].getTarget(),protoMessages[i].getMessageId() -1);
-                        }
-                        currentMessageCount++;
-                        if(currentMessageCount % 200 == 0){
-                            if(JavaProtoLogic.unReadMessageIdMap.get(protoMessages[i].getTarget()) != null){
-                                protoService.startMessageId = JavaProtoLogic.unReadMessageIdMap.get(protoMessages[i].getTarget());
-                            } else {
-                                protoService.startMessageId = protoMessages[i].getMessageId();
-                            }
-                        }
-
-                        int unReadCount = 0;
-                        if(JavaProtoLogic.unReadCountMap.get(protoMessages[i].getTarget()) != null){
-                            unReadCount = JavaProtoLogic.unReadCountMap.get(protoMessages[i].getTarget());
-                        }
-                        JavaProtoLogic.unReadCountMap.put(protoMessages[i].getTarget(),++unReadCount);
-                    }
                 }
                 SimpleFuture<ProtoMessage[]> pullMessageFutrue = protoService.futureMap.remove(header.getMessageId());
                 if(pullMessageFutrue != null){
