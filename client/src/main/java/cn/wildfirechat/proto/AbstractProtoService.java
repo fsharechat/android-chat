@@ -19,6 +19,7 @@ import com.google.protobuf.ByteString;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -324,6 +325,9 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         messageContentResponse.setContent(messageContent.getContent());
         messageContentResponse.setPushContent(messageContent.getPushContent());
         messageContentResponse.setSearchableContent(messageContent.getSearchableContent());
+        messageContentResponse.setMediaType(messageContent.getMediaType());
+        messageContentResponse.setMentionedType(messageContent.getMentionedType());
+        messageContentResponse.setRemoteMediaUrl(messageContent.getRemoteMediaUrl());
         messageResponse.setContent(messageContentResponse);
         return messageResponse;
     }
@@ -340,15 +344,37 @@ public abstract class AbstractProtoService implements PushMessageCallback {
                 .setTarget(messageResponse.getTarget())
                 .build();
         builder.setConversation(conversation);
-        WFCMessage.MessageContent.Builder build = WFCMessage.MessageContent.newBuilder();
-        build.setType(messageResponse.getContent().getType());
+        WFCMessage.MessageContent.Builder messageContentBuilder = WFCMessage.MessageContent.newBuilder();
+        messageContentBuilder.setType(messageResponse.getContent().getType());
         if(!TextUtils.isEmpty(messageResponse.getContent().getSearchableContent())){
-            build.setSearchableContent(messageResponse.getContent().getSearchableContent());
+            messageContentBuilder.setSearchableContent(messageResponse.getContent().getSearchableContent());
         }
         if(!TextUtils.isEmpty(messageResponse.getContent().getPushContent())){
-            build.setPushContent(messageResponse.getContent().getPushContent());
+            messageContentBuilder.setPushContent(messageResponse.getContent().getPushContent());
         }
-        builder.setContent(build.build());
+        if(messageResponse.getContent().getBinaryContent() != null){
+            log.i("bintray content "+new String(messageResponse.getContent().getBinaryContent()));
+            messageContentBuilder.setData(ByteString.copyFrom(messageResponse.getContent().getBinaryContent()));
+        }
+        if(!TextUtils.isEmpty(messageResponse.getContent().getContent())){
+            messageContentBuilder.setContent(messageResponse.getContent().getContent());
+        }
+        messageContentBuilder.setMentionedType(messageResponse.getContent().getMentionedType());
+        List<String> mentionTargets = new ArrayList<>();
+        Collections.addAll(mentionTargets,messageResponse.getContent().getMentionedTargets());
+        messageContentBuilder.addAllMentionedTarget(mentionTargets);
+
+        messageContentBuilder.setMediaType(messageResponse.getContent().getMediaType());
+        if(!TextUtils.isEmpty(messageResponse.getContent().getRemoteMediaUrl())){
+            messageContentBuilder.setRemoteMediaUrl(messageResponse.getContent().getRemoteMediaUrl());
+        }
+        log.i("localurl "+messageResponse.getContent().getLocalMediaPath()
+                +" remotemedieurl "+messageResponse.getContent().getRemoteMediaUrl()
+               +" localcontent "+messageResponse.getContent().getLocalContent()
+    +" mediaType "+messageResponse.getContent().getMediaType());
+
+
+        builder.setContent(messageContentBuilder.build());
         return builder.build();
     }
 
