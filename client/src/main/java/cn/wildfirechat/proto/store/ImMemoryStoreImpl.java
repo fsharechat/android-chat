@@ -85,7 +85,7 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
 //            ProtoMessage lastProMessage = getLastMessage(target);
 //            long lastMessageId = lastProMessage != null ? lastProMessage.getMessageId() : 0l;
 //            logger.i("lastMessageId "+lastMessageId+" currentMessageId "+protoMessage.getMessageId());
-
+            lastMessageSeq++;
             //接收到的推送消息
             List<ProtoMessage> protoMessages = protoMessageMap.get(target);
             if(protoMessages != null){
