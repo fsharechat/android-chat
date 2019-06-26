@@ -14,8 +14,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import cn.wildfirechat.model.Conversation;
 import cn.wildfirechat.model.ProtoConversationInfo;
+import cn.wildfirechat.model.ProtoGroupInfo;
+import cn.wildfirechat.model.ProtoGroupMember;
 import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoUnreadCount;
+import cn.wildfirechat.model.ProtoUserInfo;
 import cn.wildfirechat.proto.ProtoConstants;
 
 public class ImMemoryStoreImpl implements ImMemoryStore{
@@ -26,6 +29,9 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     private Map<String,Long> unReadMessageIdMap = new ConcurrentHashMap<>();
     private Map<String,ProtoConversationInfo> privateConversations = new ConcurrentHashMap<>();
     private Map<String,ProtoConversationInfo> groupConversations = new ConcurrentHashMap<>();
+    private Map<String,ProtoGroupInfo> groupInfoMap = new ConcurrentHashMap<>();
+    private Map<String,List<ProtoGroupMember>> groupMembersMap = new ConcurrentHashMap<>();
+    private Map<String,ProtoUserInfo> userInfoMap = new ConcurrentHashMap<>();
     @Override
     public List<String> getFriendList() {
         return friendList;
@@ -215,5 +221,101 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
             return groupConversations.get(target);
         }
         return new ProtoConversationInfo();
+    }
+
+    @Override
+    public ProtoGroupInfo getGroupInfo(String groupId) {
+        return groupInfoMap.get(groupId);
+    }
+
+    @Override
+    public void addGroupInfo(String groupId, ProtoGroupInfo protoGroupInfo, boolean refresh) {
+        if(protoGroupInfo != null){
+            logger.i("add group "+groupId+" name->"+protoGroupInfo.getName()+" owner->"+protoGroupInfo.getOwner());
+            groupInfoMap.put(groupId,protoGroupInfo);
+        }
+    }
+
+    @Override
+    public ProtoGroupMember[] getGroupMembers(String groupId) {
+        List<ProtoGroupMember> groupMembers = groupMembersMap.get(groupId);
+        if(groupMembers != null){
+            ProtoGroupMember[] protoGroupMembers = new ProtoGroupMember[groupMembers.size()];
+            groupMembers.toArray(protoGroupMembers);
+            logger.i("getGroupMembers groupId "+groupId+" size "+protoGroupMembers.length);
+            return protoGroupMembers;
+        }
+        return new ProtoGroupMember[0];
+    }
+
+    @Override
+    public void addGroupMember(String groupId, ProtoGroupMember protoGroupMember) {
+        List<ProtoGroupMember> groupMembers = groupMembersMap.get(groupId);
+        if(groupMembers == null){
+            groupMembers = new ArrayList<>();
+        }
+
+        for(ProtoGroupMember member : groupMembers){
+            if(member.getMemberId().equals(protoGroupMember.getMemberId())){
+                logger.i("member "+member.getMemberId()+" already add group"+groupId);
+                return;
+            }
+        }
+        groupMembers.add(protoGroupMember);
+        groupMembersMap.put(groupId,groupMembers);
+    }
+
+    @Override
+    public void addGroupMember(String groupId, ProtoGroupMember[] protoGroupMembers) {
+        logger.i("add addGroupMember "+protoGroupMembers.length);
+       if(protoGroupMembers != null){
+           List<ProtoGroupMember> protoGroupMemberList = new ArrayList<>();
+           for(ProtoGroupMember protoGroupMember : protoGroupMembers){
+               protoGroupMemberList.add(protoGroupMember);
+           }
+           groupMembersMap.put(groupId,protoGroupMemberList);
+       }
+    }
+
+    @Override
+    public ProtoGroupMember getGroupMember(String groupId, String memberId) {
+        List<ProtoGroupMember> groupMembers = groupMembersMap.get(groupId);
+        if(groupMembers != null){
+            for(ProtoGroupMember protoGroupMember : groupMembers){
+                if(protoGroupMember.getMemberId().equals(memberId)){
+                    return protoGroupMember;
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public ProtoUserInfo getUserInfo(String userId) {
+        return userInfoMap.get(userId);
+    }
+
+    @Override
+    public ProtoUserInfo[] getUserInfos(String[] userIds) {
+        List<ProtoUserInfo> protoUserInfoList = new ArrayList<>();
+        if(userIds != null){
+            for(String useId : userIds){
+                ProtoUserInfo protoUserInfo = userInfoMap.get(useId);
+                if(protoUserInfo != null){
+                    protoUserInfoList.add(protoUserInfo);
+                }
+            }
+            ProtoUserInfo[] protoUserInfos = new ProtoUserInfo[protoUserInfoList.size()];
+            protoUserInfoList.toArray(protoUserInfos);
+            return protoUserInfos;
+        }
+        return null;
+    }
+
+    @Override
+    public void addUserInfo(ProtoUserInfo protoUserInfos) {
+        if(protoUserInfos != null){
+            userInfoMap.put(protoUserInfos.getUid(),protoUserInfos);
+        }
     }
 }

@@ -9,6 +9,9 @@ import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import cn.wildfirechat.model.ProtoUserInfo;
 import cn.wildfirechat.proto.ProtoService;
 import cn.wildfirechat.proto.WFCMessage;
@@ -28,15 +31,20 @@ public class GetUserInfoMessageHanlder extends AbstractMessageHandler {
     @Override
     public void processMessage(Header header, ByteBufferList byteBufferList) {
         int errorCode = byteBufferList.get();
-        SimpleFuture<ProtoUserInfo> simpleFuture = protoService.futureMap.remove(header.getMessageId());
+        SimpleFuture<ProtoUserInfo[]> simpleFuture = protoService.futureMap.remove(header.getMessageId());
         log.i("messageId "+header.getMessageId()+" error code "+errorCode);
         try {
             WFCMessage.PullUserResult pullUserResult = WFCMessage.PullUserResult.parseFrom(byteBufferList.getAllByteArray());
+            ProtoUserInfo[] protoUserInfos = new ProtoUserInfo[pullUserResult.getResultCount()];
+            List<ProtoUserInfo> protoUserInfoList = new ArrayList<>();
             for(WFCMessage.UserResult userResult :pullUserResult.getResultList()){
                 WFCMessage.User user = userResult.getUser();
-                simpleFuture.setComplete(protoService.convertUser(user));
-                break;
+                ProtoUserInfo protoUserInfo = protoService.convertUser(user);
+                log.i("userId "+user.getUid()+" userName "+user.getDisplayName());
+                protoService.getImMemoryStore().addUserInfo(protoUserInfo);
+                protoUserInfoList.add(protoUserInfo);
             }
+            simpleFuture.setComplete(protoUserInfoList.toArray(protoUserInfos));
         } catch (InvalidProtocolBufferException e) {
 
         }

@@ -4,7 +4,10 @@ package cn.wildfirechat.proto.store;
 import java.util.List;
 
 import cn.wildfirechat.model.ProtoConversationInfo;
+import cn.wildfirechat.model.ProtoGroupInfo;
+import cn.wildfirechat.model.ProtoGroupMember;
 import cn.wildfirechat.model.ProtoMessage;
+import cn.wildfirechat.model.ProtoUserInfo;
 
 public interface ImMemoryStore {
     List<String> getFriendList();
@@ -24,4 +27,13 @@ public interface ImMemoryStore {
     void createGroupConversation(String groupId);
     List<ProtoConversationInfo> getGroupConversations();
     ProtoConversationInfo getConversation(int conversationType, String target, int line);
+    ProtoGroupInfo getGroupInfo(String groupId);
+    void addGroupInfo(String groupId,ProtoGroupInfo protoGroupInfo,boolean refresh);
+    ProtoGroupMember[] getGroupMembers(String groupId);
+    void addGroupMember(String groupId,ProtoGroupMember protoGroupMember);
+    void addGroupMember(String groupId,ProtoGroupMember[] protoGroupMembers);
+    ProtoGroupMember getGroupMember(String groupId, String memberId);
+    ProtoUserInfo getUserInfo(String userId);
+    ProtoUserInfo[] getUserInfos(String[] userIds);
+    void addUserInfo(ProtoUserInfo protoUserInfos);
 }

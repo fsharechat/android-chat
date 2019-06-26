@@ -8,9 +8,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import cn.wildfirechat.alarm.AlarmWrapper;
 import cn.wildfirechat.model.ProtoFriendRequest;
+import cn.wildfirechat.model.ProtoGroupInfo;
+import cn.wildfirechat.model.ProtoGroupMember;
 import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoMessageContent;
 import cn.wildfirechat.model.ProtoUserInfo;
@@ -20,6 +25,8 @@ import cn.wildfirechat.proto.handler.CreateGroupHandler;
 import cn.wildfirechat.proto.handler.FriendPullHandler;
 import cn.wildfirechat.proto.handler.FriendRequestHandler;
 import cn.wildfirechat.proto.handler.GetUserInfoMessageHanlder;
+import cn.wildfirechat.proto.handler.GroupInfoHandler;
+import cn.wildfirechat.proto.handler.GroupMemberHandler;
 import cn.wildfirechat.proto.handler.HandlerFriendRequestHandler;
 import cn.wildfirechat.proto.handler.NotifyFriendHandler;
 import cn.wildfirechat.proto.handler.NotifyFriendRequestHandler;
@@ -58,6 +65,8 @@ public class ProtoService extends AbstractProtoService {
         messageHandlers.add(new NotifyMessageHandler(this));
         messageHandlers.add(new NotifyFriendRequestHandler(this));
         messageHandlers.add(new CreateGroupHandler(this));
+        messageHandlers.add(new GroupInfoHandler(this));
+        messageHandlers.add(new GroupMemberHandler(this));
     }
 
     public void searchUser(String keyword, JavaProtoLogic.ISearchUserCallback callback){
@@ -71,16 +80,39 @@ public class ProtoService extends AbstractProtoService {
 
 
     public ProtoUserInfo getUserInfo(String userId, String groupId, boolean refresh){
-        WFCMessage.PullUserRequest request = WFCMessage.PullUserRequest.newBuilder()
-                .addRequest(WFCMessage.UserRequest.newBuilder().setUid(userId).build())
-                .build();
-        SimpleFuture<ProtoUserInfo> simpleFuture = sendMessageSync(Signal.PUBLISH,SubSignal.UPUI,request.toByteArray());
-        try {
-            return simpleFuture.get(200,TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            log.e("getuserinfo error ",e);
-            return null;
+        log.i("getUserInfo userId "+userId+" groupId "+groupId);
+        if(imMemoryStore.getUserInfo(userId) == null || refresh){
+            WFCMessage.PullUserRequest request = WFCMessage.PullUserRequest.newBuilder()
+                    .addRequest(WFCMessage.UserRequest.newBuilder().setUid(userId).build())
+                    .build();
+            SimpleFuture<ProtoUserInfo[]> simpleFuture = sendMessageSync(Signal.PUBLISH,SubSignal.UPUI,request.toByteArray());
+            try {
+                simpleFuture.get(500,TimeUnit.MILLISECONDS);
+            } catch (Exception e) {
+                log.e("getuserinfo error ",e);
+                return null;
+            }
         }
+       return imMemoryStore.getUserInfo(userId);
+    }
+
+    public ProtoUserInfo[] getUserInfos(String[] userIds, String groupId){
+        log.i("getUserInfos "+Arrays.toString(userIds)+" groupId "+groupId);
+        if(imMemoryStore.getUserInfos(userIds) == null){
+            WFCMessage.PullUserRequest.Builder userRequestBuilder = WFCMessage.PullUserRequest.newBuilder();
+            for(String user : userIds){
+                WFCMessage.UserRequest userRequest = WFCMessage.UserRequest.newBuilder().setUid(user).build();
+                userRequestBuilder.addRequest(userRequest);
+            }
+            SimpleFuture<ProtoUserInfo[]> simpleFuture = sendMessageSync(Signal.PUBLISH,SubSignal.UPUI,userRequestBuilder.build().toByteArray());
+            try {
+                simpleFuture.get(200,TimeUnit.MILLISECONDS);
+            } catch (Exception e) {
+                log.e("getuserinfo error ",e);
+            }
+        }
+
+        return imMemoryStore.getUserInfos(userIds);
     }
 
     public void sendFriendRequest(String userId, String reason, JavaProtoLogic.IGeneralCallback callback){
@@ -130,8 +162,7 @@ public class ProtoService extends AbstractProtoService {
         WFCMessage.Version request = WFCMessage.Version.newBuilder().setVersion(0).build();
         SimpleFuture<String[]> friendListFuture = sendMessageSync(Signal.PUBLISH,SubSignal.FP,request.toByteArray());
         try {
-            friendListFuture.get(500,TimeUnit.MILLISECONDS);
-            return imMemoryStore.getFriendListArr();
+            return friendListFuture.get(500,TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             return null;
         }
@@ -158,14 +189,13 @@ public class ProtoService extends AbstractProtoService {
             SimpleFuture<ProtoMessage[]> pullMessageFuture = sendMessageSync(Signal.PUBLISH,SubSignal.MP,pullMessageRequest.toByteArray());
             try {
                 pullMessageFuture.get(500,TimeUnit.MILLISECONDS);
-                protoMessages = imMemoryStore.getMessages(conversationType,target);
+                if(!TextUtils.isEmpty(target)){
+                    protoMessages = imMemoryStore.getMessages(conversationType,target);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-
-
-
         return protoMessages;
     }
 
@@ -227,7 +257,44 @@ public class ProtoService extends AbstractProtoService {
         sendMessage(Signal.PUBLISH,SubSignal.GC, createGroupRequestBuilder.build().toByteArray(),callback);
     }
 
+    public ProtoGroupInfo getGroupInfo(String groupId, boolean refresh){
+        log.i("getGroupInfo "+groupId+" refresh "+refresh);
+        if(refresh || imMemoryStore.getGroupInfo(groupId) == null){
+            WFCMessage.PullUserRequest.Builder pullUserRequestBuilder = WFCMessage.PullUserRequest.newBuilder();
+            WFCMessage.UserRequest userRequest = WFCMessage.UserRequest.newBuilder().setUid(groupId).build();
+            pullUserRequestBuilder.addRequest(userRequest);
+            SimpleFuture<ProtoGroupInfo> getGroupInfofuture = sendMessageSync(Signal.PUBLISH,SubSignal.GPGI,pullUserRequestBuilder.build().toByteArray());
+            try {
+                getGroupInfofuture.get(500,TimeUnit.MILLISECONDS);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return imMemoryStore.getGroupInfo(groupId);
+    }
 
+
+    public ProtoGroupMember[] getGroupMembers(String groupId, boolean forceUpdate){
+        log.i("getGroupMembers "+groupId+" forceUpdate "+forceUpdate);
+        if(forceUpdate || imMemoryStore.getGroupMembers(groupId) == null){
+            WFCMessage.PullGroupMemberRequest.Builder groupMemberBuilder = WFCMessage.PullGroupMemberRequest.newBuilder();
+            groupMemberBuilder.setTarget(groupId);
+            groupMemberBuilder.setHead(0);
+            SimpleFuture<ProtoGroupMember[]> simpleFuture = sendMessageSync(Signal.PUBLISH,SubSignal.GPGM,groupMemberBuilder.build().toByteArray());
+            try {
+                ProtoGroupMember[] protoGroupMembers = simpleFuture.get(500,TimeUnit.MILLISECONDS);
+                imMemoryStore.addGroupMember(groupId,protoGroupMembers);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return imMemoryStore.getGroupMembers(groupId);
+    }
+
+
+    public ProtoGroupMember getGroupMember(String groupId, String memberId){
+        return imMemoryStore.getGroupMember(groupId,memberId);
+    }
 
 
 }

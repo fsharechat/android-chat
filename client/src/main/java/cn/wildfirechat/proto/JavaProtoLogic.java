@@ -1,18 +1,11 @@
 package cn.wildfirechat.proto;
-import android.text.TextUtils;
-
 import com.comsince.github.logger.Log;
 import com.comsince.github.logger.LoggerFactory;
-
-import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import cn.wildfirechat.alarm.AlarmWrapper;
-import cn.wildfirechat.model.Conversation;
 import cn.wildfirechat.model.ProtoChannelInfo;
 import cn.wildfirechat.model.ProtoChatRoomInfo;
 import cn.wildfirechat.model.ProtoChatRoomMembersInfo;
@@ -26,7 +19,6 @@ import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoMessageContent;
 import cn.wildfirechat.model.ProtoUnreadCount;
 import cn.wildfirechat.model.ProtoUserInfo;
-import cn.wildfirechat.proto.handler.ReceiveMessageHandler;
 
 public class JavaProtoLogic {
 
@@ -499,7 +491,7 @@ public class JavaProtoLogic {
         return protoService.getUserInfo(userId,groupId,refresh);
     }
     public static ProtoUserInfo[] getUserInfos(String[] userIds, String groupId){
-        return new ProtoUserInfo[0];
+        return protoService.getUserInfos(userIds,groupId);
     }
 
     //- (void)uploadMedia:(NSData *)mediaData mediaType:(WFCCMediaType)mediaType success:(void(^)(NSString *remoteUrl))successBlock error:(void(^)(int error_code))errorBlock
@@ -536,7 +528,7 @@ public class JavaProtoLogic {
     }
 
     public static void createGroup(String groupId, String groupName, String groupPortrait, String[] memberIds, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback2 callback){
-        logger.i("createGroup groupId "+groupId+" groupName "+groupName +" groupPortrait "+groupPortrait+" memberIds "+memberIds+ " notifyMsg "+ (notifyMsg != null));
+        logger.i("createGroup groupId "+groupId+" groupName "+groupName +" groupPortrait "+groupPortrait+" notifyMsg "+ (notifyMsg != null));
         protoService.createGroup(groupId,groupName,groupPortrait,memberIds,notifyLines,notifyMsg,callback);
     }
     //- (void)addMembers:(NSArray *)members
@@ -584,16 +576,13 @@ public class JavaProtoLogic {
 //    error:(void(^)(int error_code))errorBlock;
     public static void modifyGroupAlias(String groupId, String newAlias, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){}
 
-    //- (NSArray<WFCCGroupMember *> *)getGroupMembers:(NSString *)groupId
-//                             forceUpdate:(BOOL)forceUpdate;
+
     public static ProtoGroupMember[] getGroupMembers(String groupId, boolean forceUpdate){
-        return new ProtoGroupMember[0];
+        return protoService.getGroupMembers(groupId,forceUpdate);
     }
 
-    //- (WFCCGroupMember *)getGroupMember:(NSString *)groupId
-//    memberId:(NSString *)memberId;
     public static ProtoGroupMember getGroupMember(String groupId, String memberId){
-        return new ProtoGroupMember();
+        return protoService.getGroupMember(groupId,memberId);
     }
 
     //- (void)transferGroup:(NSString *)groupId
@@ -654,8 +643,9 @@ public class JavaProtoLogic {
     public static void setUserSetting(int scope, String key, String value, JavaProtoLogic.IGeneralCallback callback){}
     public static void setDeviceToken(String appName, String token, int pushType){}
     public static void setDNSResult(String[] serverIPs){}
+
     public static ProtoGroupInfo getGroupInfo(String groupId, boolean refresh){
-        return new ProtoGroupInfo();
+        return protoService.getGroupInfo(groupId,refresh);
     }
 
     public static void getChatRoomInfo(String chatRoomId, long lastUpdateDt, JavaProtoLogic.IGetChatRoomInfoCallback callback){}

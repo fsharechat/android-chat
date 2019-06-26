@@ -38,11 +38,12 @@ public class FriendPullHandler extends AbstractMessageHandler {
                 log.i("friend list "+friend);
             }
 
-            friendListFuture.setComplete(friendList);
             if(friendList.length != 0){
                 protoService.getImMemoryStore().setFriendArr(friendList,true);
                 JavaProtoLogic.onFriendListUpdated(friendList);
             }
+            friendListFuture.setComplete(friendList);
+
         } catch (InvalidProtocolBufferException e) {
             friendListFuture.setComplete(new String[0]);
         }
