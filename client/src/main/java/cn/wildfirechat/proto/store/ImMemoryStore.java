@@ -22,6 +22,7 @@ public interface ImMemoryStore {
     long getTargetLastMessageId(String targetId);
     long getLastMessageSeq();
     void updateMessageSeq(long messageSeq);
+    void increaseMessageSeq();
     void clearUnreadStatus(int conversationType, String target, int line);
     int getUnreadCount(String target);
     void createPrivateConversation(String target);

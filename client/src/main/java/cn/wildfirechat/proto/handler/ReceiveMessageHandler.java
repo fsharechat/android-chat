@@ -39,7 +39,7 @@ public class ReceiveMessageHandler extends AbstractMessageHandler {
                 for(int i = 0 ;i<pullMessageResult.getMessageCount();i++){
                     logger.i("messsageType "+pullMessageResult.getMessage(i).getContent().getType());
                     ProtoMessage protoMessage = protoService.convertProtoMessage(pullMessageResult.getMessage(i));
-
+                    protoService.getImMemoryStore().increaseMessageSeq();
                     if(protoMessage.getContent().getType() < 10){
                         protoMessages[i] = protoMessage;
                         protoService.getImMemoryStore().addProtoMessageByTarget(protoMessages[i].getTarget(),protoMessages[i],protoService.futureMap.get(header.getMessageId()) == null);

@@ -11,6 +11,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import cn.wildfirechat.model.Conversation;
 import cn.wildfirechat.model.ProtoConversationInfo;
@@ -32,7 +33,7 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     private Map<String,ProtoGroupInfo> groupInfoMap = new ConcurrentHashMap<>();
     private Map<String,List<ProtoGroupMember>> groupMembersMap = new ConcurrentHashMap<>();
     private Map<String,ProtoUserInfo> userInfoMap = new ConcurrentHashMap<>();
-    private long lastMessageSeq = 0;
+    private AtomicLong lastMessageSeq = new AtomicLong(0);
     @Override
     public List<String> getFriendList() {
         return friendList;
@@ -85,7 +86,7 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
 //            ProtoMessage lastProMessage = getLastMessage(target);
 //            long lastMessageId = lastProMessage != null ? lastProMessage.getMessageId() : 0l;
 //            logger.i("lastMessageId "+lastMessageId+" currentMessageId "+protoMessage.getMessageId());
-            lastMessageSeq++;
+            logger.i("current messageSeq "+lastMessageSeq.get());
             //接收到的推送消息
             List<ProtoMessage> protoMessages = protoMessageMap.get(target);
             if(protoMessages != null){
@@ -146,12 +147,17 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
 
     @Override
     public long getLastMessageSeq() {
-        return lastMessageSeq;
+        return lastMessageSeq.get();
     }
 
     @Override
     public void updateMessageSeq(long messageSeq) {
-        this.lastMessageSeq = messageSeq;
+        lastMessageSeq.set(messageSeq);
+    }
+
+    @Override
+    public void increaseMessageSeq() {
+         lastMessageSeq.incrementAndGet();
     }
 
     @Override
