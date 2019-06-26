@@ -30,6 +30,8 @@ public class SendMessageHandler extends AbstractMessageHandler {
            ProtoService.log.i("messageId "+messageId+" timestamp "+timestamp);
            sendMessageCallback.onPrepared(messageId,timestamp);
            sendMessageCallback.onSuccess(messageId,timestamp);
+       } else {
+           sendMessageCallback.onFailure(errorCode);
        }
     }
 }

@@ -39,7 +39,6 @@ import cn.wildfirechat.proto.store.ImMemoryStoreImpl;
 
 public class ProtoService extends AbstractProtoService {
 
-    protected ImMemoryStore imMemoryStore;
 
     public ProtoService(AlarmWrapper alarmWrapper){
         super(alarmWrapper);

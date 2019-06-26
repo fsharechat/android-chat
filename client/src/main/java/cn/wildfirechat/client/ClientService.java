@@ -1738,6 +1738,7 @@ public class ClientService extends Service implements
             alarmWrapper = null;
         }
         resetProto();
+        JavaProtoLogic.stopProtoService();
         if (mConnectionReceiver != null) {
             unregisterReceiver(mConnectionReceiver);
             mConnectionReceiver = null;
@@ -1806,7 +1807,6 @@ public class ClientService extends Service implements
 
         JavaProtoLogic.setConnectionStatusCallback(null);
         JavaProtoLogic.setReceiveMessageCallback(null);
-        JavaProtoLogic.stopProtoService();
     }
 
 //    public void openXlog() {

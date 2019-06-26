@@ -36,4 +36,5 @@ public interface ImMemoryStore {
     ProtoUserInfo getUserInfo(String userId);
     ProtoUserInfo[] getUserInfos(String[] userIds);
     void addUserInfo(ProtoUserInfo protoUserInfos);
+    void stop();
 }

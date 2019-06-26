@@ -318,4 +318,17 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
             userInfoMap.put(protoUserInfos.getUid(),protoUserInfos);
         }
     }
+
+    @Override
+    public void stop() {
+        friendList.clear();
+        protoMessageMap.clear();
+        unReadCountMap.clear();
+        unReadMessageIdMap.clear();
+        privateConversations.clear();
+        groupConversations.clear();
+        groupInfoMap.clear();
+        groupMembersMap.clear();
+        userInfoMap.clear();
+    }
 }

@@ -32,6 +32,8 @@ import cn.wildfirechat.model.ProtoUserInfo;
 import cn.wildfirechat.proto.handler.MessageHandler;
 import cn.wildfirechat.proto.handler.RequestInfo;
 import cn.wildfirechat.proto.model.ConnectMessage;
+import cn.wildfirechat.proto.store.ImMemoryStore;
+
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusConnected;
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusConnecting;
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusUnconnected;
@@ -42,6 +44,8 @@ public abstract class AbstractProtoService implements PushMessageCallback {
     private String userName;
     private String token;
     private AndroidNIOClient androidNIOClient;
+    protected ImMemoryStore imMemoryStore;
+
 
     public ConcurrentHashMap<Integer, RequestInfo> requestMap = new ConcurrentHashMap<>();
     public ConcurrentHashMap<Integer, SimpleFuture> futureMap = new ConcurrentHashMap<>();
@@ -263,6 +267,9 @@ public abstract class AbstractProtoService implements PushMessageCallback {
 
 
     public void disConnect(int clearSession){
+        imMemoryStore.stop();
+        cancelHeartTimer();
+        cancelReconnectTimer();
         userDisconnect = true;
         byte[] body = new byte[1];
         body[0] = (byte) clearSession;
@@ -313,6 +320,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         WFCMessage.MessageContent messageContent = message.getContent();
         ProtoMessageContent messageContentResponse = new ProtoMessageContent();
         messageContentResponse.setType(messageContent.getType());
+        log.i("bintray content type " +messageContent.getType()+" bintray "+messageContent.getData().size());
         messageContentResponse.setBinaryContent(messageContent.getData().toByteArray());
         messageContentResponse.setContent(messageContent.getContent());
         messageContentResponse.setPushContent(messageContent.getPushContent());

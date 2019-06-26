@@ -355,20 +355,20 @@ public class JavaProtoLogic {
 //    }
 
     public static  ProtoConversationInfo getConversation(int conversationType, String target, int line){
-        return protoService.getImMemoryStore().getConversation(conversationType,target,line);
-//        int[] conversationTypes = new int[1];
-//        int[] lines = new int[1];
-//        conversationTypes[0] = conversationType;
-//        lines[0] = line;
-//        ProtoConversationInfo[] protoConversationInfos = getConversations(conversationTypes,lines);
-//        if(protoConversationInfos != null){
-//            for(ProtoConversationInfo protoConversationInfo : protoConversationInfos){
-//                if(protoConversationInfo.getTarget().equals(target)){
-//                    return protoConversationInfo;
-//                }
-//            }
-//        }
-//        return new ProtoConversationInfo();
+        //return protoService.getImMemoryStore().getConversation(conversationType,target,line);
+        int[] conversationTypes = new int[1];
+        int[] lines = new int[1];
+        conversationTypes[0] = conversationType;
+        lines[0] = line;
+        ProtoConversationInfo[] protoConversationInfos = getConversations(conversationTypes,lines);
+        if(protoConversationInfos != null){
+            for(ProtoConversationInfo protoConversationInfo : protoConversationInfos){
+                if(protoConversationInfo.getTarget().equals(target)){
+                    return protoConversationInfo;
+                }
+            }
+        }
+        return new ProtoConversationInfo();
     }
 
     public static  ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser){
