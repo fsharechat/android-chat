@@ -20,6 +20,8 @@ public interface ImMemoryStore {
     ProtoMessage[] getMessages(int conversationType, String target);
     ProtoMessage getLastMessage(String target);
     long getTargetLastMessageId(String targetId);
+    long getLastMessageSeq();
+    void updateMessageSeq(long messageSeq);
     void clearUnreadStatus(int conversationType, String target, int line);
     int getUnreadCount(String target);
     void createPrivateConversation(String target);

@@ -210,6 +210,7 @@ public class ProtoService extends AbstractProtoService {
 
 
     public void pullMessage(long messageId,int type){
+        log.i("pullMessageId "+messageId);
         WFCMessage.PullMessageRequest pullMessageRequest = WFCMessage.PullMessageRequest.newBuilder()
                 .setId(messageId)
                 .setType(type)

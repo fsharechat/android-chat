@@ -1,13 +1,18 @@
 package cn.wildfirechat.proto.handler;
 
+import android.text.TextUtils;
+
 import com.comsince.github.core.ByteBufferList;
 import com.comsince.github.core.future.SimpleFuture;
 import com.comsince.github.push.Header;
 import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
 import com.google.protobuf.InvalidProtocolBufferException;
+
+import cn.wildfirechat.message.core.MessageContentType;
 import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.proto.JavaProtoLogic;
+import cn.wildfirechat.proto.ProtoConstants;
 import cn.wildfirechat.proto.ProtoService;
 import cn.wildfirechat.proto.WFCMessage;
 
@@ -32,10 +37,13 @@ public class ReceiveMessageHandler extends AbstractMessageHandler {
                 ProtoService.log.i("message count "+pullMessageResult.getMessageCount());
                 ProtoMessage[] protoMessages = new ProtoMessage[pullMessageResult.getMessageCount()];
                 for(int i = 0 ;i<pullMessageResult.getMessageCount();i++){
-                    protoMessages[i] = protoService.convertProtoMessage(pullMessageResult.getMessage(i));
+                    logger.i("messsageType "+pullMessageResult.getMessage(i).getContent().getType());
+                    ProtoMessage protoMessage = protoService.convertProtoMessage(pullMessageResult.getMessage(i));
 
-                    protoService.getImMemoryStore().addProtoMessageByTarget(protoMessages[i].getTarget(),protoMessages[i],protoService.futureMap.get(header.getMessageId()) == null);
-
+                    if(protoMessage.getContent().getType() < 10){
+                        protoMessages[i] = protoMessage;
+                        protoService.getImMemoryStore().addProtoMessageByTarget(protoMessages[i].getTarget(),protoMessages[i],protoService.futureMap.get(header.getMessageId()) == null);
+                    }
                 }
                 SimpleFuture<ProtoMessage[]> pullMessageFutrue = protoService.futureMap.remove(header.getMessageId());
                 if(pullMessageFutrue != null){

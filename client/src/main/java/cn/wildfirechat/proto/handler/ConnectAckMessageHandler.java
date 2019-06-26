@@ -30,7 +30,8 @@ public class ConnectAckMessageHandler extends AbstractMessageHandler {
                 @Override
                 public void run() {
                     protoService.getMyFriendList(true);
-                    protoService.getMessages(Conversation.ConversationType.Single.ordinal(),null,0,0,false,0,null);
+                    protoService.pullMessage(protoService.getImMemoryStore().getLastMessageSeq(),0);
+//                    protoService.getMessages(Conversation.ConversationType.Single.ordinal(),null,0,0,false,0,null);
 
                 }
             });

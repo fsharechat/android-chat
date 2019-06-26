@@ -32,6 +32,7 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     private Map<String,ProtoGroupInfo> groupInfoMap = new ConcurrentHashMap<>();
     private Map<String,List<ProtoGroupMember>> groupMembersMap = new ConcurrentHashMap<>();
     private Map<String,ProtoUserInfo> userInfoMap = new ConcurrentHashMap<>();
+    private long lastMessageSeq = 0;
     @Override
     public List<String> getFriendList() {
         return friendList;
@@ -80,6 +81,11 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
         if((!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
                 || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent()))
                 || protoMessage.getContent().getBinaryContent() != null){
+
+//            ProtoMessage lastProMessage = getLastMessage(target);
+//            long lastMessageId = lastProMessage != null ? lastProMessage.getMessageId() : 0l;
+//            logger.i("lastMessageId "+lastMessageId+" currentMessageId "+protoMessage.getMessageId());
+
             //接收到的推送消息
             List<ProtoMessage> protoMessages = protoMessageMap.get(target);
             if(protoMessages != null){
@@ -88,6 +94,7 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
                 protoMessages = new LinkedList<>();
                 protoMessages.add(protoMessage);
             }
+
             protoMessageMap.put(target,protoMessages);
 
             if(isPush){
@@ -135,6 +142,16 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
             return 0;
         }
         return unReadMessageIdMap.get(targetId);
+    }
+
+    @Override
+    public long getLastMessageSeq() {
+        return lastMessageSeq;
+    }
+
+    @Override
+    public void updateMessageSeq(long messageSeq) {
+        this.lastMessageSeq = messageSeq;
     }
 
     @Override

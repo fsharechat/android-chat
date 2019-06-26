@@ -320,7 +320,6 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         WFCMessage.MessageContent messageContent = message.getContent();
         ProtoMessageContent messageContentResponse = new ProtoMessageContent();
         messageContentResponse.setType(messageContent.getType());
-        log.i("bintray content type " +messageContent.getType()+" bintray "+messageContent.getData().size());
         messageContentResponse.setBinaryContent(messageContent.getData().toByteArray());
         messageContentResponse.setContent(messageContent.getContent());
         messageContentResponse.setPushContent(messageContent.getPushContent());
