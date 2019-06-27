@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import cn.wildfirechat.message.core.MessageContentType;
 import cn.wildfirechat.model.Conversation;
 import cn.wildfirechat.model.ProtoConversationInfo;
 import cn.wildfirechat.model.ProtoGroupInfo;
@@ -79,38 +80,40 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     @Override
     public void addProtoMessageByTarget(String target, ProtoMessage protoMessage, boolean isPush) {
         logger.i("target "+target+" conversationtype "+protoMessage.getConversationType()+" add protomessage isPush "+isPush);
-        if((!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
-                || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent()))
-                || protoMessage.getContent().getBinaryContent() != null){
+        if(protoMessage.getContent().getType() != MessageContentType.ContentType_Typing){
+            if((!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
+                    || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent()))
+                    || protoMessage.getContent().getBinaryContent() != null){
 
-            logger.i("current messageSeq "+lastMessageSeq.get());
-            //接收到的推送消息
-            List<ProtoMessage> protoMessages = protoMessageMap.get(target);
-            if(protoMessages != null){
-                protoMessages.add(protoMessage);
-            } else {
-                protoMessages = new LinkedList<>();
-                protoMessages.add(protoMessage);
-            }
-
-            protoMessageMap.put(target,protoMessages);
-
-            if(isPush){
-                //设置未读消息
-                int unReadCount = 0;
-                if(unReadCountMap.get(protoMessage.getTarget()) != null){
-                    unReadCount = unReadCountMap.get(protoMessage.getTarget());
+                //接收到的推送消息
+                List<ProtoMessage> protoMessages = protoMessageMap.get(target);
+                if(protoMessages != null){
+                    protoMessages.add(protoMessage);
+                } else {
+                    protoMessages = new LinkedList<>();
+                    protoMessages.add(protoMessage);
                 }
-                unReadCountMap.put(protoMessage.getTarget(),++unReadCount);
 
-                //最后一次已读消息id
-                unReadMessageIdMap.put(target,protoMessage.getMessageId() - 1);
-            }
-            if(protoMessage.getConversationType() == ProtoConstants.ConversationType.ConversationType_Group){
-                logger.i("createGroupConversation "+protoMessage.getTarget());
-                createGroupConversation(protoMessage.getTarget());
+                protoMessageMap.put(target,protoMessages);
+
+                if(isPush){
+                    //设置未读消息
+                    int unReadCount = 0;
+                    if(unReadCountMap.get(protoMessage.getTarget()) != null){
+                        unReadCount = unReadCountMap.get(protoMessage.getTarget());
+                    }
+                    unReadCountMap.put(protoMessage.getTarget(),++unReadCount);
+
+                    //最后一次已读消息id
+                    unReadMessageIdMap.put(target,protoMessage.getMessageId() - 1);
+                }
+                if(protoMessage.getConversationType() == ProtoConstants.ConversationType.ConversationType_Group){
+                    logger.i("createGroupConversation "+protoMessage.getTarget());
+                    createGroupConversation(protoMessage.getTarget());
+                }
             }
         }
+
     }
 
     @Override

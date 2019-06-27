@@ -6,8 +6,11 @@ import com.comsince.github.push.Header;
 import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
 import com.google.protobuf.InvalidProtocolBufferException;
+
+import cn.wildfirechat.message.core.MessageContentType;
 import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.proto.JavaProtoLogic;
+import cn.wildfirechat.proto.ProtoConstants;
 import cn.wildfirechat.proto.ProtoService;
 import cn.wildfirechat.proto.WFCMessage;
 
@@ -37,7 +40,7 @@ public class ReceiveMessageHandler extends AbstractMessageHandler {
                     logger.i("messsageType "+pullMessageResult.getMessage(i).getContent().getType());
                     ProtoMessage protoMessage = protoService.convertProtoMessage(pullMessageResult.getMessage(i));
                     //protoService.getImMemoryStore().increaseMessageSeq();
-//                    if(protoMessage.getContent().getType() < 10){
+//                    if(protoMessage.getContent().getType() != MessageContentType.ContentType_Typing){
                         protoMessages[i] = protoMessage;
                         protoService.getImMemoryStore().addProtoMessageByTarget(protoMessages[i].getTarget(),protoMessages[i],protoService.futureMap.get(header.getMessageId()) == null);
 //                    }
