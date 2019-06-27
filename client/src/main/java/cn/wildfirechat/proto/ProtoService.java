@@ -149,13 +149,17 @@ public class ProtoService extends AbstractProtoService {
     }
 
     public ProtoFriendRequest[] getFriendRequest(boolean incomming) {
-        WFCMessage.Version version = WFCMessage.Version.newBuilder().setVersion(imMemoryStore.getFriendRequestHead()).build();
-        SimpleFuture<ProtoFriendRequest[]> friendRequestFuture = sendMessageSync(Signal.PUBLISH,SubSignal.FRP,version.toByteArray());
-        try {
-            return friendRequestFuture.get(200,TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            return null;
+        if(imMemoryStore.getIncomingFriendRequest().length == 0){
+            WFCMessage.Version version = WFCMessage.Version.newBuilder().setVersion(imMemoryStore.getFriendRequestHead()).build();
+            SimpleFuture<ProtoFriendRequest[]> friendRequestFuture = sendMessageSync(Signal.PUBLISH,SubSignal.FRP,version.toByteArray());
+            try {
+                friendRequestFuture.get(200,TimeUnit.MILLISECONDS);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+        return imMemoryStore.getIncomingFriendRequest();
+
     }
 
     public void handleFriendRequest(String userId, boolean accept, JavaProtoLogic.IGeneralCallback callback){

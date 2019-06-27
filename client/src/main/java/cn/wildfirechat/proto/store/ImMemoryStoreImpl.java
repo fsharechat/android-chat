@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import cn.wildfirechat.message.core.MessageContentType;
 import cn.wildfirechat.model.Conversation;
 import cn.wildfirechat.model.ProtoConversationInfo;
+import cn.wildfirechat.model.ProtoFriendRequest;
 import cn.wildfirechat.model.ProtoGroupInfo;
 import cn.wildfirechat.model.ProtoGroupMember;
 import cn.wildfirechat.model.ProtoMessage;
@@ -34,6 +35,7 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     private Map<String,ProtoGroupInfo> groupInfoMap = new ConcurrentHashMap<>();
     private Map<String,List<ProtoGroupMember>> groupMembersMap = new ConcurrentHashMap<>();
     private Map<String,ProtoUserInfo> userInfoMap = new ConcurrentHashMap<>();
+    private List<ProtoFriendRequest> protoFriendRequestList = new ArrayList<>();
     private AtomicLong lastMessageSeq = new AtomicLong(0);
     private long friendRequestHead = 0;
     @Override
@@ -352,6 +354,24 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     public void setFriendRequestHead(long friendRequestHead) {
         logger.i("current friendHead is "+friendRequestHead);
         this.friendRequestHead = friendRequestHead;
+    }
+
+    @Override
+    public ProtoFriendRequest[] getIncomingFriendRequest() {
+        ProtoFriendRequest[] protoFriendRequests = new ProtoFriendRequest[protoFriendRequestList.size()];
+        return protoFriendRequestList.toArray(protoFriendRequests);
+    }
+
+    @Override
+    public void clearProtoFriendRequest() {
+        protoFriendRequestList.clear();
+    }
+
+    @Override
+    public void addProtoFriendRequest(ProtoFriendRequest protoFriendRequest) {
+        if(!isMyFriend(protoFriendRequest.getTarget())){
+            protoFriendRequestList.add(protoFriendRequest);
+        }
     }
 
     @Override

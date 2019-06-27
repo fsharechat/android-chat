@@ -4,6 +4,7 @@ package cn.wildfirechat.proto.store;
 import java.util.List;
 
 import cn.wildfirechat.model.ProtoConversationInfo;
+import cn.wildfirechat.model.ProtoFriendRequest;
 import cn.wildfirechat.model.ProtoGroupInfo;
 import cn.wildfirechat.model.ProtoGroupMember;
 import cn.wildfirechat.model.ProtoMessage;
@@ -18,6 +19,9 @@ public interface ImMemoryStore {
     boolean isMyFriend(String userId);
     long getFriendRequestHead();
     void setFriendRequestHead(long friendRequestHead);
+    ProtoFriendRequest[] getIncomingFriendRequest();
+    void clearProtoFriendRequest();
+    void addProtoFriendRequest(ProtoFriendRequest protoFriendRequest);
     void addProtoMessageByTarget(String target, ProtoMessage protoMessage, boolean isPush);
     ProtoMessage[] getMessages(int conversationType, String target);
     ProtoMessage getLastMessage(String target);

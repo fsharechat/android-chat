@@ -8,6 +8,9 @@ import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import cn.wildfirechat.model.ProtoFriendRequest;
 import cn.wildfirechat.proto.ProtoService;
 import cn.wildfirechat.proto.WFCMessage;
@@ -29,11 +32,19 @@ public class FriendRequestHandler extends AbstractMessageHandler {
         if(errorCode == 0){
             try {
                 WFCMessage.GetFriendRequestResult getFriendRequestResult = WFCMessage.GetFriendRequestResult.parseFrom(byteBufferList.getAllByteArray());
-                ProtoFriendRequest[]  protoFriendRequests = new ProtoFriendRequest[getFriendRequestResult.getEntryCount()];
-                for(int i = 0; i < protoFriendRequests.length ; i++){
-                    protoFriendRequests[i] = convertProtoFriendRequest(getFriendRequestResult.getEntry(i));
+                List<ProtoFriendRequest> protoFriendRequestList = new ArrayList<>();
+
+                for(int i = 0; i < getFriendRequestResult.getEntryCount() ; i++){
+                    ProtoFriendRequest protoFriendRequest = convertProtoFriendRequest(getFriendRequestResult.getEntry(i));
+                    log.i("target "+protoFriendRequest.getTarget()+" reason "+protoFriendRequest.getReason());
+                    if(!protoService.getUserName().equals(protoFriendRequest.getTarget())){
+                        protoFriendRequestList.add(protoFriendRequest);
+                        protoService.getImMemoryStore().addProtoFriendRequest(protoFriendRequest);
+                    }
                 }
-                log.i("process signal "+header.getSignal() +" subSignal "+header.getSubSignal()+"messageId "+header.getMessageId());
+                ProtoFriendRequest[] protoFriendRequests = new ProtoFriendRequest[protoFriendRequestList.size()];
+                protoFriendRequestList.toArray(protoFriendRequests);
+
                 protoService.futureMap.remove(header.getMessageId()).setComplete(protoFriendRequests);
             } catch (InvalidProtocolBufferException e) {
                 e.printStackTrace();

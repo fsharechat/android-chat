@@ -24,7 +24,7 @@ public class NotifyFriendHandler extends AbstractMessageHandler {
     @Override
     public void processMessage(Header header, ByteBufferList byteBufferList) {
         long unRead = byteBufferList.getLong();
-        log.i("receive notifyHandler signal " +unRead);
+        log.i("receive notifyHandler unread " +unRead);
         protoService.getImMemoryStore().setFriendRequestHead(unRead);
         workExecutor.execute(new Runnable() {
             @Override
