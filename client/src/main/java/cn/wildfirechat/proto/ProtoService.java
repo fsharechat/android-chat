@@ -29,6 +29,7 @@ import cn.wildfirechat.proto.handler.KickoffMembersHandler;
 import cn.wildfirechat.proto.handler.NotifyFriendHandler;
 import cn.wildfirechat.proto.handler.NotifyFriendRequestHandler;
 import cn.wildfirechat.proto.handler.NotifyMessageHandler;
+import cn.wildfirechat.proto.handler.QuitGroupHandler;
 import cn.wildfirechat.proto.handler.ReceiveMessageHandler;
 import cn.wildfirechat.proto.handler.SearchUserResultMessageHandler;
 import cn.wildfirechat.proto.handler.SendMessageHandler;
@@ -66,6 +67,7 @@ public class ProtoService extends AbstractProtoService {
         messageHandlers.add(new GroupMemberHandler(this));
         messageHandlers.add(new AddGroupMemberHandler(this));
         messageHandlers.add(new KickoffMembersHandler(this));
+        messageHandlers.add(new QuitGroupHandler(this));
     }
 
     public void searchUser(String keyword, JavaProtoLogic.ISearchUserCallback callback){
@@ -317,6 +319,14 @@ public class ProtoService extends AbstractProtoService {
             removeGroupMemberRequest.addRemovedMember(memberId);
         }
         sendMessage(Signal.PUBLISH,SubSignal.GKM,removeGroupMemberRequest.build().toByteArray(),callback);
+    }
+
+
+    public void quitGroup(String groupId, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){
+        log.i("quitGroup "+groupId+" hasnotifyMsg "+(notifyMsg != null));
+        WFCMessage.QuitGroupRequest.Builder builder = WFCMessage.QuitGroupRequest.newBuilder();
+        builder.setGroupId(groupId);
+        sendMessage(Signal.PUBLISH,SubSignal.GQ,builder.build().toByteArray(),callback);
     }
 
 }

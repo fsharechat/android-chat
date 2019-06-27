@@ -540,7 +540,9 @@ public class JavaProtoLogic {
         protoService.kickoffMembers(groupId,memberIds,notifyLines,notifyMsg,callback);
     }
 
-    public static void quitGroup(String groupId, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){}
+    public static void quitGroup(String groupId, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){
+        protoService.quitGroup(groupId,notifyLines,notifyMsg,callback);
+    }
 
 
     public static void dismissGroup(String groupId, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){}

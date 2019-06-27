@@ -1,6 +1,7 @@
 package cn.wildfirechat.message.notification;
 
 import android.os.Parcel;
+import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -57,9 +58,9 @@ public class QuitGroupNotificationContent extends GroupNotificationMessageConten
     public void decode(MessagePayload payload) {
         try {
             if (payload.content != null) {
-                JSONObject jsonObject = new JSONObject(payload.content);
+                JSONObject jsonObject = new JSONObject(new String(payload.binaryContent));
                 groupId = jsonObject.optString("g");
-                operator = jsonObject.optString("m");
+                operator = jsonObject.optString("o");
             }
         } catch (JSONException e) {
             e.printStackTrace();
