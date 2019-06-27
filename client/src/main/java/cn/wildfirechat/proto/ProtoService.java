@@ -6,14 +6,9 @@ import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import cn.wildfirechat.alarm.AlarmWrapper;
-import cn.wildfirechat.model.GroupMember;
 import cn.wildfirechat.model.ProtoFriendRequest;
 import cn.wildfirechat.model.ProtoGroupInfo;
 import cn.wildfirechat.model.ProtoGroupMember;
@@ -30,6 +25,7 @@ import cn.wildfirechat.proto.handler.GetUserInfoMessageHanlder;
 import cn.wildfirechat.proto.handler.GroupInfoHandler;
 import cn.wildfirechat.proto.handler.GroupMemberHandler;
 import cn.wildfirechat.proto.handler.HandlerFriendRequestHandler;
+import cn.wildfirechat.proto.handler.KickoffMembersHandler;
 import cn.wildfirechat.proto.handler.NotifyFriendHandler;
 import cn.wildfirechat.proto.handler.NotifyFriendRequestHandler;
 import cn.wildfirechat.proto.handler.NotifyMessageHandler;
@@ -69,6 +65,7 @@ public class ProtoService extends AbstractProtoService {
         messageHandlers.add(new GroupInfoHandler(this));
         messageHandlers.add(new GroupMemberHandler(this));
         messageHandlers.add(new AddGroupMemberHandler(this));
+        messageHandlers.add(new KickoffMembersHandler(this));
     }
 
     public void searchUser(String keyword, JavaProtoLogic.ISearchUserCallback callback){
@@ -230,7 +227,7 @@ public class ProtoService extends AbstractProtoService {
                 .setName(groupName)
                 .setTargetId(TextUtils.isEmpty(groupId)? "":groupId)
                 .setPortrait(TextUtils.isEmpty(groupPortrait)? "":groupPortrait)
-                .setType(ProtoConstants.GroupType.GroupType_Free)
+                .setType(ProtoConstants.GroupType.GroupType_Normal)
                 .build();
 
         WFCMessage.Group.Builder groupBuilder = WFCMessage.Group.newBuilder();
@@ -313,5 +310,13 @@ public class ProtoService extends AbstractProtoService {
         sendMessage(Signal.PUBLISH,SubSignal.GAM,memberRequestBuilder.build().toByteArray(),callback);
     }
 
+    public void kickoffMembers(String groupId, String[] memberIds, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){
+        WFCMessage.RemoveGroupMemberRequest.Builder removeGroupMemberRequest = WFCMessage.RemoveGroupMemberRequest.newBuilder();
+        removeGroupMemberRequest.setGroupId(groupId);
+        for(String memberId : memberIds){
+            removeGroupMemberRequest.addRemovedMember(memberId);
+        }
+        sendMessage(Signal.PUBLISH,SubSignal.GKM,removeGroupMemberRequest.build().toByteArray(),callback);
+    }
 
 }

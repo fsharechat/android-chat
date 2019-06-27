@@ -536,7 +536,9 @@ public class JavaProtoLogic {
        protoService.addMembers(groupId,memberIds,notifyLines,notifyMsg,callback);
     }
 
-    public static void kickoffMembers(String groupId, String[] memberIds, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){}
+    public static void kickoffMembers(String groupId, String[] memberIds, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){
+        protoService.kickoffMembers(groupId,memberIds,notifyLines,notifyMsg,callback);
+    }
 
     public static void quitGroup(String groupId, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){}
 
