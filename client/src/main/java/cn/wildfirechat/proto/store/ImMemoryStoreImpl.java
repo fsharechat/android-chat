@@ -83,9 +83,6 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
                 || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent()))
                 || protoMessage.getContent().getBinaryContent() != null){
 
-//            ProtoMessage lastProMessage = getLastMessage(target);
-//            long lastMessageId = lastProMessage != null ? lastProMessage.getMessageId() : 0l;
-//            logger.i("lastMessageId "+lastMessageId+" currentMessageId "+protoMessage.getMessageId());
             logger.i("current messageSeq "+lastMessageSeq.get());
             //接收到的推送消息
             List<ProtoMessage> protoMessages = protoMessageMap.get(target);

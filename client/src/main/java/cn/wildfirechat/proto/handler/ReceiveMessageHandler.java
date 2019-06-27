@@ -42,10 +42,10 @@ public class ReceiveMessageHandler extends AbstractMessageHandler {
                     logger.i("messsageType "+pullMessageResult.getMessage(i).getContent().getType());
                     ProtoMessage protoMessage = protoService.convertProtoMessage(pullMessageResult.getMessage(i));
                     //protoService.getImMemoryStore().increaseMessageSeq();
-                    if(protoMessage.getContent().getType() < 10){
+//                    if(protoMessage.getContent().getType() < 10){
                         protoMessages[i] = protoMessage;
                         protoService.getImMemoryStore().addProtoMessageByTarget(protoMessages[i].getTarget(),protoMessages[i],protoService.futureMap.get(header.getMessageId()) == null);
-                    }
+//                    }
                 }
                 SimpleFuture<ProtoMessage[]> pullMessageFutrue = protoService.futureMap.remove(header.getMessageId());
                 if(pullMessageFutrue != null){

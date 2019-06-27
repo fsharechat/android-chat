@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import cn.wildfirechat.alarm.AlarmWrapper;
+import cn.wildfirechat.model.GroupMember;
 import cn.wildfirechat.model.ProtoFriendRequest;
 import cn.wildfirechat.model.ProtoGroupInfo;
 import cn.wildfirechat.model.ProtoGroupMember;
@@ -20,6 +21,7 @@ import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoMessageContent;
 import cn.wildfirechat.model.ProtoUserInfo;
 import cn.wildfirechat.proto.handler.AddFriendRequestHandler;
+import cn.wildfirechat.proto.handler.AddGroupMemberHandler;
 import cn.wildfirechat.proto.handler.ConnectAckMessageHandler;
 import cn.wildfirechat.proto.handler.CreateGroupHandler;
 import cn.wildfirechat.proto.handler.FriendPullHandler;
@@ -66,6 +68,7 @@ public class ProtoService extends AbstractProtoService {
         messageHandlers.add(new CreateGroupHandler(this));
         messageHandlers.add(new GroupInfoHandler(this));
         messageHandlers.add(new GroupMemberHandler(this));
+        messageHandlers.add(new AddGroupMemberHandler(this));
     }
 
     public void searchUser(String keyword, JavaProtoLogic.ISearchUserCallback callback){
@@ -294,6 +297,20 @@ public class ProtoService extends AbstractProtoService {
 
     public ProtoGroupMember getGroupMember(String groupId, String memberId){
         return imMemoryStore.getGroupMember(groupId,memberId);
+    }
+
+    public void addMembers(String groupId, String[] memberIds, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){
+        log.i("groupId "+groupId +" memberIds "+memberIds);
+        WFCMessage.AddGroupMemberRequest.Builder memberRequestBuilder = WFCMessage.AddGroupMemberRequest.newBuilder();
+        memberRequestBuilder.setGroupId(groupId);
+        for(String memberId : memberIds){
+            WFCMessage.GroupMember groupMember = WFCMessage.GroupMember.newBuilder()
+                    .setMemberId(memberId)
+                    .setType(ProtoConstants.GroupMemberType.GroupMemberType_Normal)
+                    .build();
+            memberRequestBuilder.addAddedMember(groupMember);
+        }
+        sendMessage(Signal.PUBLISH,SubSignal.GAM,memberRequestBuilder.build().toByteArray(),callback);
     }
 
 

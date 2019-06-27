@@ -531,41 +531,18 @@ public class JavaProtoLogic {
         logger.i("createGroup groupId "+groupId+" groupName "+groupName +" groupPortrait "+groupPortrait+" notifyMsg "+ (notifyMsg != null));
         protoService.createGroup(groupId,groupName,groupPortrait,memberIds,notifyLines,notifyMsg,callback);
     }
-    //- (void)addMembers:(NSArray *)members
-//           toGroup:(NSString *)groupId
-//       notifyLines:(NSArray<NSNumber *> *)notifyLines
-//     notifyContent:(WFCCMessageContent *)notifyContent
-//           success:(void(^)())successBlock
-//             error:(void(^)(int error_code))errorBlock;
-    public static void addMembers(String groupId, String[] memberIds, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){}
-    //- (void)kickoffMembers:(NSArray *)members
-//             fromGroup:(NSString *)groupId
-//           notifyLines:(NSArray<NSNumber *> *)notifyLines
-//         notifyContent:(WFCCMessageContent *)notifyContent
-//               success:(void(^)())successBlock
-//                 error:(void(^)(int error_code))errorBlock;
+
+    public static void addMembers(String groupId, String[] memberIds, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){
+       protoService.addMembers(groupId,memberIds,notifyLines,notifyMsg,callback);
+    }
+
     public static void kickoffMembers(String groupId, String[] memberIds, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){}
-    //- (void)quitGroup:(NSString *)groupId
-//      notifyLines:(NSArray<NSNumber *> *)notifyLines
-//    notifyContent:(WFCCMessageContent *)notifyContent
-//          success:(void(^)())successBlock
-//            error:(void(^)(int error_code))errorBlock;
+
     public static void quitGroup(String groupId, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){}
 
-    //- (void)dismissGroup:(NSString *)groupId
-//         notifyLines:(NSArray<NSNumber *> *)notifyLines
-//       notifyContent:(WFCCMessageContent *)notifyContent
-//             success:(void(^)())successBlock
-//               error:(void(^)(int error_code))errorBlock;
+
     public static void dismissGroup(String groupId, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){}
 
-    //- (void)modifyGroupInfo:(NSString *)groupId
-//    type:(ModifyGroupInfoType)type
-//    newValue:(NSString *)newValue
-//    notifyLines:(NSArray<NSNumber *> *)notifyLines
-//    notifyContent:(WFCCMessageContent *)notifyContent
-//    success:(void(^)(void))successBlock
-//    error:(void(^)(int error_code))errorBlock
     public static void modifyGroupInfo(String groupId, int modifyType, String newValue, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){}
 
     //- (void)modifyGroupAlias:(NSString *)groupId
