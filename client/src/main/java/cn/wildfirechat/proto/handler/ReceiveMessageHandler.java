@@ -1,18 +1,13 @@
 package cn.wildfirechat.proto.handler;
 
-import android.text.TextUtils;
-
 import com.comsince.github.core.ByteBufferList;
 import com.comsince.github.core.future.SimpleFuture;
 import com.comsince.github.push.Header;
 import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
 import com.google.protobuf.InvalidProtocolBufferException;
-
-import cn.wildfirechat.message.core.MessageContentType;
 import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.proto.JavaProtoLogic;
-import cn.wildfirechat.proto.ProtoConstants;
 import cn.wildfirechat.proto.ProtoService;
 import cn.wildfirechat.proto.WFCMessage;
 

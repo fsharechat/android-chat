@@ -7,8 +7,10 @@ import com.comsince.github.push.SubSignal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import cn.wildfirechat.alarm.AlarmWrapper;
+import cn.wildfirechat.model.ModifyMyInfoEntry;
 import cn.wildfirechat.model.ProtoFriendRequest;
 import cn.wildfirechat.model.ProtoGroupInfo;
 import cn.wildfirechat.model.ProtoGroupMember;
@@ -27,6 +29,7 @@ import cn.wildfirechat.proto.handler.GroupMemberHandler;
 import cn.wildfirechat.proto.handler.HandlerFriendRequestHandler;
 import cn.wildfirechat.proto.handler.KickoffMembersHandler;
 import cn.wildfirechat.proto.handler.ModifyGroupInfoHandler;
+import cn.wildfirechat.proto.handler.ModifyMyInfoHandler;
 import cn.wildfirechat.proto.handler.NotifyFriendHandler;
 import cn.wildfirechat.proto.handler.NotifyFriendRequestHandler;
 import cn.wildfirechat.proto.handler.NotifyMessageHandler;
@@ -70,6 +73,7 @@ public class ProtoService extends AbstractProtoService {
         messageHandlers.add(new KickoffMembersHandler(this));
         messageHandlers.add(new QuitGroupHandler(this));
         messageHandlers.add(new ModifyGroupInfoHandler(this));
+        messageHandlers.add(new ModifyMyInfoHandler(this));
     }
 
     public void searchUser(String keyword, JavaProtoLogic.ISearchUserCallback callback){
@@ -97,6 +101,15 @@ public class ProtoService extends AbstractProtoService {
             }
         }
        return imMemoryStore.getUserInfo(userId);
+    }
+
+    public void modifyMyInfo(Map<Integer, String> values, JavaProtoLogic.IGeneralCallback callback){
+        WFCMessage.ModifyMyInfoRequest.Builder modifyMyInfoBuilder = WFCMessage.ModifyMyInfoRequest.newBuilder();
+        for(Map.Entry<Integer,String> entry: values.entrySet()){
+            WFCMessage.InfoEntry infoEntry = WFCMessage.InfoEntry.newBuilder().setType(entry.getKey()).setValue(entry.getValue()).build();
+            modifyMyInfoBuilder.addEntry(infoEntry);
+        }
+        sendMessage(Signal.PUBLISH,SubSignal.MMI,modifyMyInfoBuilder.build().toByteArray(),callback);
     }
 
     public ProtoUserInfo[] getUserInfos(String[] userIds, String groupId){

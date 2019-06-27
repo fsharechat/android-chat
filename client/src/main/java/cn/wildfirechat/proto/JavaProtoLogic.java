@@ -497,10 +497,10 @@ public class JavaProtoLogic {
     //- (void)uploadMedia:(NSData *)mediaData mediaType:(WFCCMediaType)mediaType success:(void(^)(NSString *remoteUrl))successBlock error:(void(^)(int error_code))errorBlock
     public static void uploadMedia(byte[] data, int mediaType, JavaProtoLogic.IUploadMediaCallback callback){}
 
-    //-(void)modifyMyInfo:(NSDictionary<NSNumber */*ModifyMyInfoType*/, NSString *> *)values
-    //success:(void(^)())successBlock
-    //error:(void(^)(int error_code))errorBlock
-    public static void modifyMyInfo(Map<Integer, String> values, JavaProtoLogic.IGeneralCallback callback){}
+
+    public static void modifyMyInfo(Map<Integer, String> values, JavaProtoLogic.IGeneralCallback callback){
+        protoService.modifyMyInfo(values,callback);
+    }
 
     //- (BOOL)deleteMessage:(long)messageId
     public static boolean deleteMessage(long messageId){
