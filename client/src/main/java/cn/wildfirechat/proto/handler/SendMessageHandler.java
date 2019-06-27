@@ -23,13 +23,14 @@ public class SendMessageHandler extends AbstractMessageHandler {
     public void processMessage(Header header, ByteBufferList byteBufferList) {
        int errorCode = byteBufferList.get();
        ProtoService.log.i("error code "+errorCode);
-        JavaProtoLogic.ISendMessageCallback sendMessageCallback = (JavaProtoLogic.ISendMessageCallback) protoService.requestMap.remove(header.getMessageId()).getCallback();
+       JavaProtoLogic.ISendMessageCallback sendMessageCallback = (JavaProtoLogic.ISendMessageCallback) protoService.requestMap.remove(header.getMessageId()).getCallback();
        if(errorCode == 0){
            long messageId = byteBufferList.getLong();
            long timestamp = byteBufferList.getLong();
            ProtoService.log.i("messageId "+messageId+" timestamp "+timestamp);
            sendMessageCallback.onPrepared(messageId,timestamp);
            sendMessageCallback.onSuccess(messageId,timestamp);
+           protoService.getImMemoryStore().increaseMessageSeq();
        } else {
            sendMessageCallback.onFailure(errorCode);
        }
