@@ -35,6 +35,7 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     private Map<String,List<ProtoGroupMember>> groupMembersMap = new ConcurrentHashMap<>();
     private Map<String,ProtoUserInfo> userInfoMap = new ConcurrentHashMap<>();
     private AtomicLong lastMessageSeq = new AtomicLong(0);
+    private long friendRequestHead = 0;
     @Override
     public List<String> getFriendList() {
         return friendList;
@@ -343,7 +344,19 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     }
 
     @Override
+    public long getFriendRequestHead() {
+        return friendRequestHead;
+    }
+
+    @Override
+    public void setFriendRequestHead(long friendRequestHead) {
+        logger.i("current friendHead is "+friendRequestHead);
+        this.friendRequestHead = friendRequestHead;
+    }
+
+    @Override
     public void stop() {
+        friendRequestHead = 0;
         friendList.clear();
         protoMessageMap.clear();
         unReadCountMap.clear();

@@ -23,10 +23,7 @@ public class NotifyFriendRequestHandler extends AbstractMessageHandler {
     public void processMessage(Header header, ByteBufferList byteBufferList) {
         ProtoService.log.i("receive friend request update message");
         long unRead = byteBufferList.getLong();
-        if(unRead != 0){
-
-        } else {
-            JavaProtoLogic.onFriendRequestUpdated();
-        }
+        protoService.getImMemoryStore().setFriendRequestHead(unRead - 1);
+        JavaProtoLogic.onFriendRequestUpdated();
     }
 }

@@ -16,6 +16,8 @@ public interface ImMemoryStore {
     void setFriendArr(String[] friendArr);
     boolean hasFriend();
     boolean isMyFriend(String userId);
+    long getFriendRequestHead();
+    void setFriendRequestHead(long friendRequestHead);
     void addProtoMessageByTarget(String target, ProtoMessage protoMessage, boolean isPush);
     ProtoMessage[] getMessages(int conversationType, String target);
     ProtoMessage getLastMessage(String target);

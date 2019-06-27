@@ -149,7 +149,7 @@ public class ProtoService extends AbstractProtoService {
     }
 
     public ProtoFriendRequest[] getFriendRequest(boolean incomming) {
-        WFCMessage.Version version = WFCMessage.Version.newBuilder().setVersion(System.currentTimeMillis() - 60 * 1000).build();
+        WFCMessage.Version version = WFCMessage.Version.newBuilder().setVersion(imMemoryStore.getFriendRequestHead()).build();
         SimpleFuture<ProtoFriendRequest[]> friendRequestFuture = sendMessageSync(Signal.PUBLISH,SubSignal.FRP,version.toByteArray());
         try {
             return friendRequestFuture.get(200,TimeUnit.MILLISECONDS);
