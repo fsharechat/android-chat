@@ -547,14 +547,10 @@ public class JavaProtoLogic {
 
     public static void dismissGroup(String groupId, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){}
 
-    public static void modifyGroupInfo(String groupId, int modifyType, String newValue, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){}
+    public static void modifyGroupInfo(String groupId, int modifyType, String newValue, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){
+        protoService.modifyGroupInfo(groupId,modifyType,newValue,notifyLines,notifyMsg,callback);
+    }
 
-    //- (void)modifyGroupAlias:(NSString *)groupId
-//    alias:(NSString *)newAlias
-//    notifyLines:(NSArray<NSNumber *> *)notifyLines
-//    notifyContent:(WFCCMessageContent *)notifyContent
-//    success:(void(^)())successBlock
-//    error:(void(^)(int error_code))errorBlock;
     public static void modifyGroupAlias(String groupId, String newAlias, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){}
 
 
@@ -566,12 +562,6 @@ public class JavaProtoLogic {
         return protoService.getGroupMember(groupId,memberId);
     }
 
-    //- (void)transferGroup:(NSString *)groupId
-//                   to:(NSString *)newOwner
-//          notifyLines:(NSArray<NSNumber *> *)notifyLines
-//        notifyContent:(WFCCMessageContent *)notifyContent
-//              success:(void(^)())successBlock
-//                error:(void(^)(int error_code))errorBlock;
     public static void transferGroup(String groupId, String newOwner, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){}
 
     //    - (void)createChannel:(NSString *)channelName

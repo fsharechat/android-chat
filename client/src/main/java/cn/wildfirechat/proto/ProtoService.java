@@ -26,6 +26,7 @@ import cn.wildfirechat.proto.handler.GroupInfoHandler;
 import cn.wildfirechat.proto.handler.GroupMemberHandler;
 import cn.wildfirechat.proto.handler.HandlerFriendRequestHandler;
 import cn.wildfirechat.proto.handler.KickoffMembersHandler;
+import cn.wildfirechat.proto.handler.ModifyGroupInfoHandler;
 import cn.wildfirechat.proto.handler.NotifyFriendHandler;
 import cn.wildfirechat.proto.handler.NotifyFriendRequestHandler;
 import cn.wildfirechat.proto.handler.NotifyMessageHandler;
@@ -68,6 +69,7 @@ public class ProtoService extends AbstractProtoService {
         messageHandlers.add(new AddGroupMemberHandler(this));
         messageHandlers.add(new KickoffMembersHandler(this));
         messageHandlers.add(new QuitGroupHandler(this));
+        messageHandlers.add(new ModifyGroupInfoHandler(this));
     }
 
     public void searchUser(String keyword, JavaProtoLogic.ISearchUserCallback callback){
@@ -327,6 +329,15 @@ public class ProtoService extends AbstractProtoService {
         WFCMessage.QuitGroupRequest.Builder builder = WFCMessage.QuitGroupRequest.newBuilder();
         builder.setGroupId(groupId);
         sendMessage(Signal.PUBLISH,SubSignal.GQ,builder.build().toByteArray(),callback);
+    }
+
+    public void modifyGroupInfo(String groupId, int modifyType, String newValue, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback callback){
+        log.i("groupId "+groupId+" modifyType "+modifyType+" new value "+newValue);
+        WFCMessage.ModifyGroupInfoRequest.Builder modifyGroupInfoBuilder = WFCMessage.ModifyGroupInfoRequest.newBuilder();
+        modifyGroupInfoBuilder.setGroupId(groupId);
+        modifyGroupInfoBuilder.setType(modifyType);
+        modifyGroupInfoBuilder.setValue(newValue);
+        sendMessage(Signal.PUBLISH,SubSignal.GMI,modifyGroupInfoBuilder.build().toByteArray(),callback);
     }
 
 }
