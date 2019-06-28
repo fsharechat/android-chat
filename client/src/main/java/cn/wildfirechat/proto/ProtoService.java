@@ -41,12 +41,10 @@ import cn.wildfirechat.proto.handler.QuitGroupHandler;
 import cn.wildfirechat.proto.handler.ReceiveMessageHandler;
 import cn.wildfirechat.proto.handler.SearchUserResultMessageHandler;
 import cn.wildfirechat.proto.handler.SendMessageHandler;
-import cn.wildfirechat.proto.model.QiuTokenMessage;
 import cn.wildfirechat.proto.store.ImMemoryStore;
 import cn.wildfirechat.proto.store.ImMemoryStoreImpl;
 
 public class ProtoService extends AbstractProtoService {
-    UploadManager uploadManager;
 
     public ProtoService(AlarmWrapper alarmWrapper){
         super(alarmWrapper);
@@ -231,9 +229,35 @@ public class ProtoService extends AbstractProtoService {
     }
 
     public void sendMessage(ProtoMessage msg, int expireDuration, JavaProtoLogic.ISendMessageCallback callback){
-        WFCMessage.Message sendMessage = convertWFCMessage(msg);
-        imMemoryStore.addProtoMessageByTarget(msg.getTarget(),msg,false);
-        sendMessage(Signal.PUBLISH,SubSignal.MS,sendMessage.toByteArray(),callback);
+
+        //文件类型先上传到云
+        String localMediaPath = msg.getContent().getLocalMediaPath();
+        log.i("local media path "+localMediaPath+" mediaType "+msg.getContent().getMediaType());
+        if(!TextUtils.isEmpty(localMediaPath)){
+            uploadMedia(localMediaPath, msg.getContent().getMediaType(), new JavaProtoLogic.IUploadMediaCallback() {
+                @Override
+                public void onSuccess(String remoteUrl) {
+                    msg.getContent().setRemoteMediaUrl(remoteUrl);
+                    imMemoryStore.addProtoMessageByTarget(msg.getTarget(),msg,false);
+                    WFCMessage.Message sendMessage = convertWFCMessage(msg);
+                    sendMessage(Signal.PUBLISH,SubSignal.MS,sendMessage.toByteArray(),callback);
+                }
+
+                @Override
+                public void onProgress(long uploaded, long total) {
+                     //callback.onProgress(uploaded,total);
+                }
+
+                @Override
+                public void onFailure(int errorCode) {
+
+                }
+            });
+        } else {
+            WFCMessage.Message sendMessage = convertWFCMessage(msg);
+            imMemoryStore.addProtoMessageByTarget(msg.getTarget(),msg,false);
+            sendMessage(Signal.PUBLISH,SubSignal.MS,sendMessage.toByteArray(),callback);
+        }
     }
 
 
@@ -364,41 +388,6 @@ public class ProtoService extends AbstractProtoService {
         sendMessage(Signal.PUBLISH,SubSignal.GMI,modifyGroupInfoBuilder.build().toByteArray(),callback);
     }
 
-    public void uploadMedia(byte[] data, int mediaType, JavaProtoLogic.IUploadMediaCallback callback){
-        QiuTokenMessage qiuTokenMessage = getQiniuUploadToken(mediaType);
-        if(qiuTokenMessage != null){
-            String token = qiuTokenMessage.getToken();
-            String domain = qiuTokenMessage.getDomain();
-            String key = mediaType+"-"+getUserName()+"-"+System.currentTimeMillis();
-            log.i("upload media type "+mediaType +" token "+token +" domain "+domain+" key "+key);
 
-            uploadManager.put(data, key, token, new UpCompletionHandler() {
-                @Override
-                public void complete(String key, ResponseInfo info, JSONObject response) {
-                    log.i("key "+key+" info "+info );
-                    if(info.statusCode == 200){
-                        callback.onSuccess(domain+key);
-                    } else {
-                        callback.onFailure(ErrorCode.FILE_NOT_EXIST);
-                    }
-                }
-            },null);
-        } else {
-            callback.onFailure(ErrorCode.SERVICE_EXCEPTION);
-        }
-
-    }
-
-    private QiuTokenMessage getQiniuUploadToken(int mediaType){
-        byte[] type = new byte[1];
-        type[0] = (byte)mediaType;
-        SimpleFuture<QiuTokenMessage> tokenFuture = sendMessageSync(Signal.PUBLISH,SubSignal.GQNUT,type);
-        try {
-            return tokenFuture.get(200,TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 
 }

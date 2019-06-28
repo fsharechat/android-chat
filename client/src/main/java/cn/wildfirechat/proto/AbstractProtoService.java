@@ -16,6 +16,13 @@ import com.comsince.github.push.SubSignal;
 import com.comsince.github.push.util.AES;
 import com.comsince.github.push.util.Base64;
 import com.google.protobuf.ByteString;
+import com.qiniu.android.http.ResponseInfo;
+import com.qiniu.android.storage.UpCompletionHandler;
+import com.qiniu.android.storage.UpProgressHandler;
+import com.qiniu.android.storage.UploadManager;
+import com.qiniu.android.storage.UploadOptions;
+
+import org.json.JSONObject;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -24,7 +31,9 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
+import cn.wildfirechat.ErrorCode;
 import cn.wildfirechat.alarm.AlarmWrapper;
 import cn.wildfirechat.alarm.Timer;
 import cn.wildfirechat.model.ProtoMessage;
@@ -33,6 +42,7 @@ import cn.wildfirechat.model.ProtoUserInfo;
 import cn.wildfirechat.proto.handler.MessageHandler;
 import cn.wildfirechat.proto.handler.RequestInfo;
 import cn.wildfirechat.proto.model.ConnectMessage;
+import cn.wildfirechat.proto.model.QiuTokenMessage;
 import cn.wildfirechat.proto.store.ImMemoryStore;
 
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusConnected;
@@ -46,7 +56,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
     private String token;
     private AndroidNIOClient androidNIOClient;
     protected ImMemoryStore imMemoryStore;
-
+    UploadManager uploadManager;
 
     public ConcurrentHashMap<Integer, RequestInfo> requestMap = new ConcurrentHashMap<>();
     public ConcurrentHashMap<Integer, SimpleFuture> futureMap = new ConcurrentHashMap<>();
@@ -279,6 +289,68 @@ public abstract class AbstractProtoService implements PushMessageCallback {
 
 
 
+    public void uploadMedia(byte[] data, int mediaType, JavaProtoLogic.IUploadMediaCallback callback){
+        QiuTokenMessage qiuTokenMessage = getQiniuUploadToken(mediaType);
+        if(qiuTokenMessage != null){
+            String token = qiuTokenMessage.getToken();
+            String domain = qiuTokenMessage.getDomain();
+            String key = mediaType+"-"+getUserName()+"-"+System.currentTimeMillis();
+            log.i("upload media type "+mediaType +" token "+token +" domain "+domain+" key "+key);
+
+            uploadManager.put(data, key, token, new UpCompletionHandler() {
+                @Override
+                public void complete(String key, ResponseInfo info, JSONObject response) {
+                    log.i("key "+key+" info "+info );
+                    if(info.statusCode == 200){
+                        callback.onSuccess(domain+key);
+                    } else {
+                        callback.onFailure(ErrorCode.FILE_NOT_EXIST);
+                    }
+                }
+            },null);
+        } else {
+            callback.onFailure(ErrorCode.SERVICE_EXCEPTION);
+        }
+    }
+
+    protected void uploadMedia(String data, int mediaType, JavaProtoLogic.IUploadMediaCallback callback){
+        QiuTokenMessage qiuTokenMessage = getQiniuUploadToken(mediaType);
+        if(qiuTokenMessage != null){
+            String token = qiuTokenMessage.getToken();
+            String domain = qiuTokenMessage.getDomain();
+            String key = mediaType+"-"+getUserName()+"-"+System.currentTimeMillis()+"-"+data;
+            log.i("upload media type "+mediaType +" token "+token +" domain "+domain+" key "+key);
+
+            uploadManager.put(data, key, token, new UpCompletionHandler() {
+                @Override
+                public void complete(String key, ResponseInfo info, JSONObject response) {
+                    log.i("key "+key+" info "+info );
+                    if(info.statusCode == 200){
+                        callback.onSuccess(domain+key);
+                    } else {
+                        callback.onFailure(ErrorCode.FILE_NOT_EXIST);
+                    }
+                }
+            },null);
+        } else {
+            callback.onFailure(ErrorCode.SERVICE_EXCEPTION);
+        }
+    }
+
+    private QiuTokenMessage getQiniuUploadToken(int mediaType){
+        byte[] type = new byte[1];
+        type[0] = (byte)mediaType;
+        SimpleFuture<QiuTokenMessage> tokenFuture = sendMessageSync(Signal.PUBLISH,SubSignal.GQNUT,type);
+        try {
+            return tokenFuture.get(200, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+
+
     public ProtoUserInfo convertUser(WFCMessage.User user){
         ProtoUserInfo protoUserInfo = new ProtoUserInfo();
         protoUserInfo.setUid(user.getUid());
@@ -369,7 +441,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         if(!TextUtils.isEmpty(messageResponse.getContent().getRemoteMediaUrl())){
             messageContentBuilder.setRemoteMediaUrl(messageResponse.getContent().getRemoteMediaUrl());
         }
-        log.i("localurl "+messageResponse.getContent().getLocalMediaPath()
+        log.i("localmediaurl "+messageResponse.getContent().getLocalMediaPath()
                 +" remotemedieurl "+messageResponse.getContent().getRemoteMediaUrl()
                +" localcontent "+messageResponse.getContent().getLocalContent()
     +" mediaType "+messageResponse.getContent().getMediaType());

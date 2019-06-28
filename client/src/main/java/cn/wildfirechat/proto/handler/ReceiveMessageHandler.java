@@ -28,7 +28,7 @@ public class ReceiveMessageHandler extends AbstractMessageHandler {
     @Override
     public void processMessage(Header header, ByteBufferList byteBufferList) {
         int errorCode = byteBufferList.get();
-        ProtoService.log.i("receive message code "+errorCode);
+        ProtoService.log.i("receive message code "+errorCode +" remain "+byteBufferList.remaining());
         if(errorCode == 0){
             try {
                 WFCMessage.PullMessageResult pullMessageResult = WFCMessage.PullMessageResult.parseFrom(byteBufferList.getAllByteArray());

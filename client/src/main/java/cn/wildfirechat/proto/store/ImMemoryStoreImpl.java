@@ -195,9 +195,10 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     @Override
     public List<ProtoConversationInfo> getPrivateConversations() {
         for(String friend : getFriendList()){
-            if(getLastMessage(friend) != null){
+            //用户从friendlist列表进入创建会话可能会引起崩溃
+            //if(getLastMessage(friend) != null){
                 createPrivateConversation(friend);
-            }
+            //}
         }
         List<ProtoConversationInfo> protoConversationInfoList = new ArrayList<>();
         if(privateConversations != null){
