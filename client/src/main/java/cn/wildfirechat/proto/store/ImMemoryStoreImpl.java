@@ -381,6 +381,8 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     @Override
     public void stop() {
         friendRequestHead = 0;
+        protoFriendRequestList.clear();
+        lastMessageSeq.set(0);
         friendList.clear();
         protoMessageMap.clear();
         unReadCountMap.clear();
