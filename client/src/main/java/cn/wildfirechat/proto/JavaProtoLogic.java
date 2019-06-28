@@ -494,8 +494,9 @@ public class JavaProtoLogic {
         return protoService.getUserInfos(userIds,groupId);
     }
 
-    //- (void)uploadMedia:(NSData *)mediaData mediaType:(WFCCMediaType)mediaType success:(void(^)(NSString *remoteUrl))successBlock error:(void(^)(int error_code))errorBlock
-    public static void uploadMedia(byte[] data, int mediaType, JavaProtoLogic.IUploadMediaCallback callback){}
+    public static void uploadMedia(byte[] data, int mediaType, JavaProtoLogic.IUploadMediaCallback callback){
+        protoService.uploadMedia(data,mediaType,callback);
+    }
 
 
     public static void modifyMyInfo(Map<Integer, String> values, JavaProtoLogic.IGeneralCallback callback){

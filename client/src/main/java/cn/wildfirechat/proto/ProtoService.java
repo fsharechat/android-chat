@@ -1,16 +1,19 @@
 package cn.wildfirechat.proto;
 import android.text.TextUtils;
-
 import com.comsince.github.core.future.SimpleFuture;
 import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
+import com.qiniu.android.http.ResponseInfo;
+import com.qiniu.android.storage.UpCompletionHandler;
+import com.qiniu.android.storage.UploadManager;
+import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import cn.wildfirechat.ErrorCode;
 import cn.wildfirechat.alarm.AlarmWrapper;
-import cn.wildfirechat.model.ModifyMyInfoEntry;
 import cn.wildfirechat.model.ProtoFriendRequest;
 import cn.wildfirechat.model.ProtoGroupInfo;
 import cn.wildfirechat.model.ProtoGroupMember;
@@ -33,19 +36,22 @@ import cn.wildfirechat.proto.handler.ModifyMyInfoHandler;
 import cn.wildfirechat.proto.handler.NotifyFriendHandler;
 import cn.wildfirechat.proto.handler.NotifyFriendRequestHandler;
 import cn.wildfirechat.proto.handler.NotifyMessageHandler;
+import cn.wildfirechat.proto.handler.QiniuTokenHandler;
 import cn.wildfirechat.proto.handler.QuitGroupHandler;
 import cn.wildfirechat.proto.handler.ReceiveMessageHandler;
 import cn.wildfirechat.proto.handler.SearchUserResultMessageHandler;
 import cn.wildfirechat.proto.handler.SendMessageHandler;
+import cn.wildfirechat.proto.model.QiuTokenMessage;
 import cn.wildfirechat.proto.store.ImMemoryStore;
 import cn.wildfirechat.proto.store.ImMemoryStoreImpl;
 
 public class ProtoService extends AbstractProtoService {
-
+    UploadManager uploadManager;
 
     public ProtoService(AlarmWrapper alarmWrapper){
         super(alarmWrapper);
         imMemoryStore = new ImMemoryStoreImpl();
+        uploadManager = new UploadManager();
         initHandlers();
     }
 
@@ -74,6 +80,7 @@ public class ProtoService extends AbstractProtoService {
         messageHandlers.add(new QuitGroupHandler(this));
         messageHandlers.add(new ModifyGroupInfoHandler(this));
         messageHandlers.add(new ModifyMyInfoHandler(this));
+        messageHandlers.add(new QiniuTokenHandler(this));
     }
 
     public void searchUser(String keyword, JavaProtoLogic.ISearchUserCallback callback){
@@ -87,7 +94,7 @@ public class ProtoService extends AbstractProtoService {
 
 
     public ProtoUserInfo getUserInfo(String userId, String groupId, boolean refresh){
-        log.i("getUserInfo userId "+userId+" groupId "+groupId);
+        log.i("getUserInfo userId "+userId+" groupId "+groupId+" refresh "+refresh);
         if(imMemoryStore.getUserInfo(userId) == null || refresh){
             WFCMessage.PullUserRequest request = WFCMessage.PullUserRequest.newBuilder()
                     .addRequest(WFCMessage.UserRequest.newBuilder().setUid(userId).build())
@@ -96,8 +103,7 @@ public class ProtoService extends AbstractProtoService {
             try {
                 simpleFuture.get(500,TimeUnit.MILLISECONDS);
             } catch (Exception e) {
-                log.e("getuserinfo error ",e);
-                return null;
+                e.printStackTrace();
             }
         }
        return imMemoryStore.getUserInfo(userId);
@@ -356,6 +362,43 @@ public class ProtoService extends AbstractProtoService {
         modifyGroupInfoBuilder.setType(modifyType);
         modifyGroupInfoBuilder.setValue(newValue);
         sendMessage(Signal.PUBLISH,SubSignal.GMI,modifyGroupInfoBuilder.build().toByteArray(),callback);
+    }
+
+    public void uploadMedia(byte[] data, int mediaType, JavaProtoLogic.IUploadMediaCallback callback){
+        QiuTokenMessage qiuTokenMessage = getQiniuUploadToken(mediaType);
+        if(qiuTokenMessage != null){
+            String token = qiuTokenMessage.getToken();
+            String domain = qiuTokenMessage.getDomain();
+            String key = mediaType+"-"+getUserName()+"-"+System.currentTimeMillis();
+            log.i("upload media type "+mediaType +" token "+token +" domain "+domain+" key "+key);
+
+            uploadManager.put(data, key, token, new UpCompletionHandler() {
+                @Override
+                public void complete(String key, ResponseInfo info, JSONObject response) {
+                    log.i("key "+key+" info "+info );
+                    if(info.statusCode == 200){
+                        callback.onSuccess(domain+key);
+                    } else {
+                        callback.onFailure(ErrorCode.FILE_NOT_EXIST);
+                    }
+                }
+            },null);
+        } else {
+            callback.onFailure(ErrorCode.SERVICE_EXCEPTION);
+        }
+
+    }
+
+    private QiuTokenMessage getQiniuUploadToken(int mediaType){
+        byte[] type = new byte[1];
+        type[0] = (byte)mediaType;
+        SimpleFuture<QiuTokenMessage> tokenFuture = sendMessageSync(Signal.PUBLISH,SubSignal.GQNUT,type);
+        try {
+            return tokenFuture.get(200,TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
 }

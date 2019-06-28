@@ -287,6 +287,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         protoUserInfo.setMobile(user.getMobile());
         protoUserInfo.setName(user.getName());
         protoUserInfo.setAddress(user.getAddress());
+        protoUserInfo.setPortrait(user.getPortrait());
         return protoUserInfo;
     }
 
@@ -309,7 +310,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         if(conversation.getType() == ProtoConstants.ConversationType.ConversationType_Private){
             if(!message.getFromUser().equals(userName)){
                 messageResponse.setTarget(message.getFromUser());
-                messageResponse.setFrom(message.getConversation().getTarget());
+                messageResponse.setFrom(message.getFromUser());
             } else {
                 messageResponse.setTarget(message.getConversation().getTarget());
                 messageResponse.setFrom(message.getFromUser());
