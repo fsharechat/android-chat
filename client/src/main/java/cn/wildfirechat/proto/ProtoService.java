@@ -141,25 +141,26 @@ public class ProtoService extends AbstractProtoService {
 
     public int getUnreadFriendRequestStatus(){
         ProtoFriendRequest[] protoFriendRequests = getFriendRequest(true);
+        int unReadStatus = 0;
         if(protoFriendRequests != null){
-            return protoFriendRequests.length;
-        } else {
-            return 0;
+            for(ProtoFriendRequest protoFriendRequest : protoFriendRequests){
+                if(protoFriendRequest.getStatus() == 0){
+                    unReadStatus++;
+                }
+            }
         }
+        return unReadStatus;
     }
 
     public ProtoFriendRequest[] getFriendRequest(boolean incomming) {
-        if(imMemoryStore.getIncomingFriendRequest().length == 0){
-            WFCMessage.Version version = WFCMessage.Version.newBuilder().setVersion(imMemoryStore.getFriendRequestHead()).build();
-            SimpleFuture<ProtoFriendRequest[]> friendRequestFuture = sendMessageSync(Signal.PUBLISH,SubSignal.FRP,version.toByteArray());
-            try {
-                friendRequestFuture.get(200,TimeUnit.MILLISECONDS);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        WFCMessage.Version version = WFCMessage.Version.newBuilder().setVersion(imMemoryStore.getFriendRequestHead() - 1000).build();
+        SimpleFuture<ProtoFriendRequest[]> friendRequestFuture = sendMessageSync(Signal.PUBLISH,SubSignal.FRP,version.toByteArray());
+        try {
+            friendRequestFuture.get(200,TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return imMemoryStore.getIncomingFriendRequest();
-
     }
 
     public void handleFriendRequest(String userId, boolean accept, JavaProtoLogic.IGeneralCallback callback){

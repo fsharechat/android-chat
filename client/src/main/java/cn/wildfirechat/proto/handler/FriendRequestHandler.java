@@ -36,7 +36,7 @@ public class FriendRequestHandler extends AbstractMessageHandler {
 
                 for(int i = 0; i < getFriendRequestResult.getEntryCount() ; i++){
                     ProtoFriendRequest protoFriendRequest = convertProtoFriendRequest(getFriendRequestResult.getEntry(i));
-                    log.i("target "+protoFriendRequest.getTarget()+" reason "+protoFriendRequest.getReason());
+                    log.i("target "+protoFriendRequest.getTarget()+" reason "+protoFriendRequest.getReason()+" status "+protoFriendRequest.getStatus());
                     if(!protoService.getUserName().equals(protoFriendRequest.getTarget())){
                         protoFriendRequestList.add(protoFriendRequest);
                         protoService.getImMemoryStore().addProtoFriendRequest(protoFriendRequest);

@@ -369,9 +369,13 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
 
     @Override
     public void addProtoFriendRequest(ProtoFriendRequest protoFriendRequest) {
-        if(!isMyFriend(protoFriendRequest.getTarget())){
-            protoFriendRequestList.add(protoFriendRequest);
+        for(ProtoFriendRequest friendRequest : protoFriendRequestList){
+            if(friendRequest.getTarget().equals(protoFriendRequest.getTarget())){
+                friendRequest.setStatus(protoFriendRequest.getStatus());
+                return;
+            }
         }
+        protoFriendRequestList.add(protoFriendRequest);
     }
 
     @Override
