@@ -229,7 +229,11 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         scheduledExecutorService.execute(new Runnable() {
             @Override
             public void run() {
+                //messageid最大不超过4898,以为私有协议messageId最大只支持4898
                 int messageId = PreferenceManager.getDefaultSharedPreferences(context).getInt("message_id",0);
+                if(messageId > 4898){
+                    messageId = 0;
+                }
                 log.i("sendMessage send signal "+signal+" subSignal "+subSignal+" messageId "+messageId);
                 androidNIOClient.sendMessage(signal, subSignal,messageId, message);
                 if(callback != null){
@@ -267,6 +271,9 @@ public abstract class AbstractProtoService implements PushMessageCallback {
             @Override
             public void run() {
                 int messageId = PreferenceManager.getDefaultSharedPreferences(context).getInt("message_id",0);
+                if(messageId > 4898){
+                    messageId = 0;
+                }
                 log.i("sendMessageSync send signal "+signal+" subSignal "+subSignal+" messageId "+messageId);
                 futureMap.put(messageId,simpleFuture);
                 androidNIOClient.sendMessage(signal, subSignal,messageId, message);
