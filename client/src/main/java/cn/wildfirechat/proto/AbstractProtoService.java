@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import cn.wildfirechat.ErrorCode;
 import cn.wildfirechat.alarm.AlarmWrapper;
 import cn.wildfirechat.alarm.Timer;
+import cn.wildfirechat.message.core.MessageStatus;
 import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoMessageContent;
 import cn.wildfirechat.model.ProtoUserInfo;
@@ -331,7 +332,13 @@ public abstract class AbstractProtoService implements PushMessageCallback {
                         callback.onFailure(ErrorCode.FILE_NOT_EXIST);
                     }
                 }
-            },null);
+            },new UploadOptions(null, null, false, new UpProgressHandler() {
+                @Override
+                public void progress(String key, double percent) {
+                    log.i("upload key "+key+" percent "+percent);
+                    callback.onProgress((long) (100 * percent),100);
+                }
+            }, null));
         } else {
             callback.onFailure(ErrorCode.SERVICE_EXCEPTION);
         }
@@ -366,13 +373,17 @@ public abstract class AbstractProtoService implements PushMessageCallback {
 
     public ProtoMessage convertProtoMessage(WFCMessage.Message message){
         ProtoMessage messageResponse = new ProtoMessage();
-        //log.i("current user "+userName +" fromuser "+message.getFromUser()+" target "+message.getToUser() +"message "+message.getContent().getSearchableContent());
+        log.i("current user "+userName +" fromuser "+message.getFromUser()+" target "+message.getToUser() +"message "+message.getContent().getSearchableContent()
+        +"media type "+message.getContent().getMediaType()+" remote url "+message.getContent().getRemoteMediaUrl()
+        +" messageId "+message.getMessageId());
         if(message.getFromUser().equals(userName)){
             messageResponse.setDirection(0);
+            messageResponse.setStatus(MessageStatus.Sent.value());
         } else {
             messageResponse.setDirection(1);
         }
         messageResponse.setMessageId(message.getMessageId());
+        messageResponse.setMessageUid(message.getMessageId());
         messageResponse.setTimestamp(message.getServerTimestamp());
         WFCMessage.Conversation conversation  = message.getConversation();
         messageResponse.setConversationType(conversation.getType());
@@ -409,7 +420,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         WFCMessage.Message.Builder builder = WFCMessage.Message.newBuilder();
         log.i("fromuser "+messageResponse.getFrom()+" target "+messageResponse.getTarget() +
                 " content type "+messageResponse.getContent().getType()+" tos "+messageResponse.getTos()+"direct "+messageResponse.getDirection()
-                + "status "+messageResponse.getStatus());
+                + "status "+messageResponse.getStatus()+" messageUid "+messageResponse.getMessageUid() +" messageId "+messageResponse.getMessageId());
         builder.setFromUser(messageResponse.getFrom());
         WFCMessage.Conversation conversation = WFCMessage.Conversation.newBuilder()
                 .setType(messageResponse.getConversationType())

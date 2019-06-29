@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import cn.wildfirechat.ErrorCode;
 import cn.wildfirechat.alarm.AlarmWrapper;
+import cn.wildfirechat.message.core.MessageStatus;
 import cn.wildfirechat.model.ProtoFriendRequest;
 import cn.wildfirechat.model.ProtoGroupInfo;
 import cn.wildfirechat.model.ProtoGroupMember;
@@ -233,11 +234,13 @@ public class ProtoService extends AbstractProtoService {
         //文件类型先上传到云
         String localMediaPath = msg.getContent().getLocalMediaPath();
         log.i("local media path "+localMediaPath+" mediaType "+msg.getContent().getMediaType());
+        callback.onPrepared(msg.getMessageId(),System.currentTimeMillis());
         if(!TextUtils.isEmpty(localMediaPath)){
             uploadMedia(localMediaPath, msg.getContent().getMediaType(), new JavaProtoLogic.IUploadMediaCallback() {
                 @Override
                 public void onSuccess(String remoteUrl) {
                     msg.getContent().setRemoteMediaUrl(remoteUrl);
+                    msg.setStatus(MessageStatus.Sent.value());
                     imMemoryStore.addProtoMessageByTarget(msg.getTarget(),msg,false);
                     WFCMessage.Message sendMessage = convertWFCMessage(msg);
                     sendMessage(Signal.PUBLISH,SubSignal.MS,sendMessage.toByteArray(),callback);
@@ -245,12 +248,12 @@ public class ProtoService extends AbstractProtoService {
 
                 @Override
                 public void onProgress(long uploaded, long total) {
-                     //callback.onProgress(uploaded,total);
+                     callback.onProgress(uploaded,total);
                 }
 
                 @Override
                 public void onFailure(int errorCode) {
-
+                      callback.onFailure(errorCode);
                 }
             });
         } else {

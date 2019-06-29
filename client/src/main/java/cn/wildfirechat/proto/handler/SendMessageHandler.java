@@ -28,7 +28,7 @@ public class SendMessageHandler extends AbstractMessageHandler {
            long messageId = byteBufferList.getLong();
            long timestamp = byteBufferList.getLong();
            ProtoService.log.i("messageId "+messageId+" timestamp "+timestamp);
-           sendMessageCallback.onPrepared(messageId,timestamp);
+//           sendMessageCallback.onPrepared(messageId,timestamp);
            sendMessageCallback.onSuccess(messageId,timestamp);
            protoService.getImMemoryStore().increaseMessageSeq();
        } else {

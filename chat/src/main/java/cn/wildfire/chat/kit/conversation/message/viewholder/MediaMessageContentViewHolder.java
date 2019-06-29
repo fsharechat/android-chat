@@ -1,5 +1,6 @@
 package cn.wildfire.chat.kit.conversation.message.viewholder;
 
+import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
 

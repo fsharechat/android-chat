@@ -46,6 +46,7 @@ public class ImageMessageContentViewHolder extends MediaMessageContentViewHolder
 
     @Override
     public void onBind(UiMessage message) {
+        progressBar.setVisibility(View.GONE);
         ImageMessageContent imageMessage = (ImageMessageContent) message.message.content;
         Bitmap thumbnail = imageMessage.getThumbnail();
         int width = thumbnail != null ? thumbnail.getWidth() : 200;
