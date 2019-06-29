@@ -1,5 +1,5 @@
 # 概述
-* 扫描下方二维码下载apk  
+## 扫描下方二维码下载apk
 
 ![qr-chatapk](qr-chat.png)
 
