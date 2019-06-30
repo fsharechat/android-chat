@@ -276,6 +276,7 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
         }
         protoConversationInfo.setLastMessage(protoMessage);
         ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
+        logger.i("group "+groupId+" unread "+getUnreadCount(groupId));
         protoUnreadCount.setUnread(getUnreadCount(groupId));
         protoConversationInfo.setUnreadCount(protoUnreadCount);
         protoConversationInfo.setTimestamp(System.currentTimeMillis());
@@ -287,7 +288,10 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
         List<ProtoConversationInfo> protoConversationInfoList = new ArrayList<>();
         if(groupConversations != null){
             for(Map.Entry<String,ProtoConversationInfo> entry : groupConversations.entrySet()){
-                protoConversationInfoList.add(entry.getValue());
+                ProtoConversationInfo groupConversation = entry.getValue();ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
+                protoUnreadCount.setUnread(getUnreadCount(groupConversation.getTarget()));
+                groupConversation.setUnreadCount(protoUnreadCount);
+                protoConversationInfoList.add(groupConversation);
             }
         }
         return protoConversationInfoList;
