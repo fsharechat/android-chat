@@ -302,7 +302,7 @@ public class JavaProtoLogic {
     }
 
     public static void updateMessageContent(ProtoMessage msg){
-
+        protoService.updateMessageContent(msg);
     }
 
     public static long getServerDeltaTime(){
@@ -380,7 +380,7 @@ public class JavaProtoLogic {
     }
 
     public static  ProtoMessage getMessage(long messageId){
-        return new ProtoMessage();
+        return protoService.getMessage(messageId);
     }
 
     public static ProtoMessage getMessageByUid(long messageUid){

@@ -1205,6 +1205,7 @@ public class ChatManager {
      * @param callback 发送消息状态回调
      */
     public void sendMessage(final Message msg, final SendMessageCallback callback) {
+        Log.i("comsicne","msg target "+msg.conversation.target);
         sendMessage(msg, 0, callback);
     }
 

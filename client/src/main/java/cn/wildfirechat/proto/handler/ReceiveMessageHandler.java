@@ -1,11 +1,16 @@
 package cn.wildfirechat.proto.handler;
 
+import android.text.TextUtils;
+
 import com.comsince.github.core.ByteBufferList;
 import com.comsince.github.core.future.SimpleFuture;
 import com.comsince.github.push.Header;
 import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
 import com.google.protobuf.InvalidProtocolBufferException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import cn.wildfirechat.message.core.MessageContentType;
 import cn.wildfirechat.model.ProtoMessage;
@@ -35,16 +40,20 @@ public class ReceiveMessageHandler extends AbstractMessageHandler {
                 long head = pullMessageResult.getHead();
                 ProtoService.log.i("message count "+pullMessageResult.getMessageCount()+" head "+head);
                 protoService.getImMemoryStore().updateMessageSeq(head);
-                ProtoMessage[] protoMessages = new ProtoMessage[pullMessageResult.getMessageCount()];
+                List<ProtoMessage> protoMessageList = new ArrayList<>();
                 for(int i = 0 ;i<pullMessageResult.getMessageCount();i++){
                     logger.i("messsageType "+pullMessageResult.getMessage(i).getContent().getType());
                     ProtoMessage protoMessage = protoService.convertProtoMessage(pullMessageResult.getMessage(i));
-                    //protoService.getImMemoryStore().increaseMessageSeq();
-//                    if(protoMessage.getContent().getType() != MessageContentType.ContentType_Typing){
-                        protoMessages[i] = protoMessage;
-                        protoService.getImMemoryStore().addProtoMessageByTarget(protoMessages[i].getTarget(),protoMessages[i],protoService.futureMap.get(header.getMessageId()) == null);
-//                    }
+                    if(!TextUtils.isEmpty(protoMessage.getTarget())){
+                        ProtoMessage existProtoMessage = protoService.getImMemoryStore().getMessage(protoMessage.getMessageId());
+                        if(existProtoMessage == null){
+                            protoMessageList.add(protoMessage);
+                            protoService.getImMemoryStore().addProtoMessageByTarget(protoMessage.getTarget(),protoMessage,protoService.futureMap.get(header.getMessageId()) == null);
+                        }
+                    }
                 }
+                ProtoMessage[] protoMessages = new ProtoMessage[protoMessageList.size()];
+                protoMessageList.toArray(protoMessages);
                 SimpleFuture<ProtoMessage[]> pullMessageFutrue = protoService.futureMap.remove(header.getMessageId());
                 if(pullMessageFutrue != null){
                     pullMessageFutrue.setComplete(protoMessages);

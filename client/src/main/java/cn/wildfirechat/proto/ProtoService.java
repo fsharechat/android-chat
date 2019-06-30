@@ -225,6 +225,14 @@ public class ProtoService extends AbstractProtoService {
         return protoMessages;
     }
 
+    public ProtoMessage getMessage(long messageId){
+        return imMemoryStore.getMessage(messageId);
+    }
+
+    public boolean updateMessageContent(ProtoMessage msg){
+        return imMemoryStore.updateMessageContent(msg);
+    }
+
     public void getRemoteMessages(int conversationType, String target, int line, long beforeMessageUid, int count, JavaProtoLogic.ILoadRemoteMessagesCallback callback){
         callback.onSuccess(new ProtoMessage[0]);
     }
@@ -234,6 +242,7 @@ public class ProtoService extends AbstractProtoService {
         //文件类型先上传到云
         String localMediaPath = msg.getContent().getLocalMediaPath();
         log.i("local media path "+localMediaPath+" mediaType "+msg.getContent().getMediaType());
+        //注意这里的位置，不要随意调换有可能影响语音通话
         callback.onPrepared(msg.getMessageId(),System.currentTimeMillis());
         if(!TextUtils.isEmpty(localMediaPath)){
             uploadMedia(localMediaPath, msg.getContent().getMediaType(), new JavaProtoLogic.IUploadMediaCallback() {
@@ -257,6 +266,10 @@ public class ProtoService extends AbstractProtoService {
                 }
             });
         } else {
+            if(TextUtils.isEmpty(msg.getTarget())){
+                log.i("target not null abort send message");
+                return;
+            }
             WFCMessage.Message sendMessage = convertWFCMessage(msg);
             imMemoryStore.addProtoMessageByTarget(msg.getTarget(),msg,false);
             sendMessage(Signal.PUBLISH,SubSignal.MS,sendMessage.toByteArray(),callback);

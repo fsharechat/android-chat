@@ -146,7 +146,7 @@ public class WfcUIKit implements AVEngineKit.AVEngineCallback, OnReceiveMessageL
         } else {
             Intent main = new Intent(WfcIntent.ACTION_MAIN);
             voip.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            PendingIntent pendingIntent = PendingIntent.getActivities(context, 100, new Intent[]{main, voip}, 0);
+            PendingIntent pendingIntent = PendingIntent.getActivities(context, 100, new Intent[]{main, voip}, PendingIntent.FLAG_ONE_SHOT);
             try {
                 pendingIntent.send();
             } catch (PendingIntent.CanceledException e) {

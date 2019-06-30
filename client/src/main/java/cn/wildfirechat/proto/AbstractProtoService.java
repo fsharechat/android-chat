@@ -382,7 +382,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         ProtoMessage messageResponse = new ProtoMessage();
         log.i("current user "+userName +" fromuser "+message.getFromUser()+" target "+message.getToUser() +"message "+message.getContent().getSearchableContent()
         +"media type "+message.getContent().getMediaType()+" remote url "+message.getContent().getRemoteMediaUrl()
-        +" messageId "+message.getMessageId());
+        +" messageId "+message.getMessageId()+" contentType "+message.getContent().getType()+" content "+message.getContent().getContent());
         if(message.getFromUser().equals(userName)){
             messageResponse.setDirection(0);
             messageResponse.setStatus(MessageStatus.Sent.value());
@@ -413,6 +413,9 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         ProtoMessageContent messageContentResponse = new ProtoMessageContent();
         messageContentResponse.setType(messageContent.getType());
         messageContentResponse.setBinaryContent(messageContent.getData().toByteArray());
+        if(messageContent.getData() != null){
+            log.i("bintray content "+new String(messageContent.getData().toByteArray()));
+        }
         messageContentResponse.setContent(messageContent.getContent());
         messageContentResponse.setPushContent(messageContent.getPushContent());
         messageContentResponse.setSearchableContent(messageContent.getSearchableContent());

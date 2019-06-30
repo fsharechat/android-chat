@@ -11,6 +11,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import cn.wildfirechat.message.core.MessageContentType;
@@ -83,6 +84,10 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     @Override
     public void addProtoMessageByTarget(String target, ProtoMessage protoMessage, boolean isPush) {
         logger.i("target "+target+" conversationtype "+protoMessage.getConversationType()+" add protomessage isPush "+isPush);
+//        if(protoMessage.getContent().getType() >= 400){
+//            logger.i("message content type "+protoMessage.getContent().getType()+" dont persistent");
+//            return;
+//        }
         if(protoMessage.getContent().getType() != MessageContentType.ContentType_Typing){
             if((!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
                     || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent()))
@@ -93,7 +98,7 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
                 if(protoMessages != null){
                     protoMessages.add(protoMessage);
                 } else {
-                    protoMessages = new LinkedList<>();
+                    protoMessages = new CopyOnWriteArrayList<>();
                     protoMessages.add(protoMessage);
                 }
 
@@ -125,10 +130,59 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
         if(protoMessages != null){
             ProtoMessage[] protoMessagesArr = new ProtoMessage[protoMessages.size()];
             protoMessages.toArray(protoMessagesArr);
-            return protoMessagesArr;
+            return filterProMessage(protoMessagesArr);
         }
 
         return new ProtoMessage[0];
+    }
+
+    @Override
+    public ProtoMessage[] filterProMessage(ProtoMessage[] protoMessages){
+        List<ProtoMessage> destPro = new ArrayList<>();
+        for(ProtoMessage sourceProto : protoMessages){
+            if(sourceProto.getContent().getType() < 400){
+                destPro.add(sourceProto);
+            }
+        }
+        ProtoMessage[] resultprotoMessage = new ProtoMessage[destPro.size()];
+        return destPro.toArray(resultprotoMessage);
+    }
+
+    @Override
+    public ProtoMessage getMessage(long messageId) {
+        for(Map.Entry<String,List<ProtoMessage>> msgEntry: protoMessageMap.entrySet()){
+            List<ProtoMessage> protoMessages = msgEntry.getValue();
+            for(ProtoMessage protoMessage : protoMessages){
+                if(protoMessage.getMessageId() == messageId){
+                    logger.i("get messageId "+messageId);
+                    return protoMessage;
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public boolean updateMessageContent(ProtoMessage msg) {
+        String target = msg.getTarget();
+        if(TextUtils.isEmpty(target)){
+            return false;
+        } else {
+            ProtoMessage removeMessage = null;
+            List<ProtoMessage> protoMessages = protoMessageMap.get(target);
+            for(ProtoMessage protoMessage : protoMessages){
+                if(msg.getMessageId() == protoMessage.getMessageId()){
+                    removeMessage = protoMessage;
+                    break;
+                }
+            }
+            if(removeMessage != null){
+                protoMessages.remove(removeMessage);
+                protoMessages.add(msg);
+                return true;
+            }
+            return false;
+        }
     }
 
     @Override
