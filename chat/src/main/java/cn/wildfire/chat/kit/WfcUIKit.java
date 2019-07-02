@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.text.TextUtils;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.Lifecycle;
@@ -180,6 +181,12 @@ public class WfcUIKit implements AVEngineKit.AVEngineCallback, OnReceiveMessageL
             WfcNotificationManager.getInstance().handleReceiveMessage(application, msgs);
         } else {
             // do nothing
+            for(Message message : messages){
+                Log.i("comsince","start vibrator flag "+message.content.getPersistFlag());
+                if(message.content.getPersistFlag() == PersistFlag.Persist_And_Count){
+                    WfcNotificationManager.getInstance().startVibrator(application);
+                }
+            }
         }
     }
 
