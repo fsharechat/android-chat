@@ -5,6 +5,7 @@ import com.comsince.github.push.Header;
 import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
 
+import cn.wildfirechat.message.core.MessageStatus;
 import cn.wildfirechat.proto.JavaProtoLogic;
 import cn.wildfirechat.proto.ProtoService;
 
@@ -23,16 +24,19 @@ public class SendMessageHandler extends AbstractMessageHandler {
     public void processMessage(Header header, ByteBufferList byteBufferList) {
        int errorCode = byteBufferList.get();
        ProtoService.log.i("error code "+errorCode);
-       JavaProtoLogic.ISendMessageCallback sendMessageCallback = (JavaProtoLogic.ISendMessageCallback) protoService.requestMap.remove(header.getMessageId()).getCallback();
+       RequestInfo requestInfo = protoService.requestMap.remove(header.getMessageId());
+       JavaProtoLogic.ISendMessageCallback sendMessageCallback = (JavaProtoLogic.ISendMessageCallback) requestInfo.getCallback();
        if(errorCode == 0){
            long messageId = byteBufferList.getLong();
            long timestamp = byteBufferList.getLong();
            ProtoService.log.i("messageId "+messageId+" timestamp "+timestamp);
 //           sendMessageCallback.onPrepared(messageId,timestamp);
            sendMessageCallback.onSuccess(messageId,timestamp);
+           protoService.getImMemoryStore().updateMessageStatus(requestInfo.getProtoMessageId(), MessageStatus.Sent.ordinal());
            protoService.getImMemoryStore().increaseMessageSeq();
        } else {
            sendMessageCallback.onFailure(errorCode);
+           protoService.getImMemoryStore().updateMessageStatus(requestInfo.getProtoMessageId(), MessageStatus.Send_Failure.ordinal());
        }
     }
 }

@@ -244,6 +244,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
                 androidNIOClient.sendMessage(signal, subSignal,messageId, message);
                 if(callback != null){
                     RequestInfo requestInfo = new RequestInfo(signal,subSignal,callback.getClass(),callback);
+                    requestInfo.setProtoMessageId(protoMessageId);
                     requestMap.put(messageId,requestInfo);
                 }
 
@@ -417,7 +418,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         +" messageId "+message.getMessageId()+" contentType "+message.getContent().getType()+" content "+message.getContent().getContent());
         if(message.getFromUser().equals(userName)){
             messageResponse.setDirection(0);
-            messageResponse.setStatus(MessageStatus.Unread.value());
+            messageResponse.setStatus(MessageStatus.Sent.value());
         } else {
             messageResponse.setDirection(1);
         }

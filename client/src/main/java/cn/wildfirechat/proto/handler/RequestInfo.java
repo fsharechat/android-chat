@@ -8,6 +8,7 @@ public class RequestInfo {
     private SubSignal subSignal;
     private Class type;
     private Object callback;
+    private long protoMessageId;
     private String callbackParam;
 
     public RequestInfo(Signal signal, SubSignal subSignal, Class type, Object callback) {
@@ -55,5 +56,13 @@ public class RequestInfo {
 
     public void setCallbackParam(String callbackParam) {
         this.callbackParam = callbackParam;
+    }
+
+    public long getProtoMessageId() {
+        return protoMessageId;
+    }
+
+    public void setProtoMessageId(long protoMessageId) {
+        this.protoMessageId = protoMessageId;
     }
 }

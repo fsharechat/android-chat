@@ -245,13 +245,13 @@ public class ProtoService extends AbstractProtoService {
         //注意这里的位置，不要随意调换有可能影响语音通话
         long protoMessageId = System.currentTimeMillis();
         msg.setMessageId(protoMessageId);
+        msg.setStatus(MessageStatus.Sending.value());
         callback.onPrepared(protoMessageId,System.currentTimeMillis());
         if(!TextUtils.isEmpty(localMediaPath)){
             uploadMedia(localMediaPath, msg.getContent().getMediaType(), new JavaProtoLogic.IUploadMediaCallback() {
                 @Override
                 public void onSuccess(String remoteUrl) {
                     msg.getContent().setRemoteMediaUrl(remoteUrl);
-                    msg.setStatus(MessageStatus.Sent.value());
                     imMemoryStore.addProtoMessageByTarget(msg.getTarget(),msg,false);
                     WFCMessage.Message sendMessage = convertWFCMessage(msg);
                     sendMessage(Signal.PUBLISH,SubSignal.MS,protoMessageId,sendMessage.toByteArray(),callback);
