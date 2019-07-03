@@ -421,6 +421,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
             messageResponse.setStatus(MessageStatus.Sent.value());
         } else {
             messageResponse.setDirection(1);
+            messageResponse.setStatus(MessageStatus.Unread.value());
         }
         messageResponse.setMessageId(message.getMessageId());
         messageResponse.setMessageUid(message.getMessageId());
