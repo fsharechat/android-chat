@@ -228,6 +228,10 @@ public abstract class AbstractProtoService implements PushMessageCallback {
     }
 
     protected void sendMessage(Signal signal,SubSignal subSignal,byte[] message,Object callback){
+        sendMessage(signal,subSignal,0,message,callback);
+    }
+
+    protected void sendMessage(Signal signal,SubSignal subSignal,long protoMessageId,byte[] message,Object callback){
         scheduledExecutorService.execute(new Runnable() {
             @Override
             public void run() {
@@ -251,10 +255,11 @@ public abstract class AbstractProtoService implements PushMessageCallback {
                             public void run() {
                                 log.i("send message timeout");
                                 RequestInfo requestInfo = requestMap.remove(finalMessageId);
-                                if(requestInfo != null && requestInfo.getCallback() != null){
+                                if(requestInfo != null && requestInfo.getCallback() != null && protoMessageId != 0){
                                     try {
                                         Method onFailure = requestInfo.getType().getMethod("onFailure",int.class);
                                         onFailure.invoke(requestInfo.getCallback(),ErrorCode.SERVICE_DIED);
+                                        imMemoryStore.updateMessageStatus(protoMessageId,MessageStatus.Send_Failure.ordinal());
                                     } catch (NoSuchMethodException e) {
                                         e.printStackTrace();
                                     } catch (IllegalAccessException e) {
@@ -412,7 +417,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         +" messageId "+message.getMessageId()+" contentType "+message.getContent().getType()+" content "+message.getContent().getContent());
         if(message.getFromUser().equals(userName)){
             messageResponse.setDirection(0);
-            messageResponse.setStatus(MessageStatus.Sent.value());
+            messageResponse.setStatus(MessageStatus.Unread.value());
         } else {
             messageResponse.setDirection(1);
         }

@@ -243,7 +243,9 @@ public class ProtoService extends AbstractProtoService {
         String localMediaPath = msg.getContent().getLocalMediaPath();
         log.i("messageId "+msg.getMessageId()+" local media path "+localMediaPath+" mediaType "+msg.getContent().getMediaType());
         //注意这里的位置，不要随意调换有可能影响语音通话
-        callback.onPrepared(System.currentTimeMillis(),System.currentTimeMillis());
+        long protoMessageId = System.currentTimeMillis();
+        msg.setMessageId(protoMessageId);
+        callback.onPrepared(protoMessageId,System.currentTimeMillis());
         if(!TextUtils.isEmpty(localMediaPath)){
             uploadMedia(localMediaPath, msg.getContent().getMediaType(), new JavaProtoLogic.IUploadMediaCallback() {
                 @Override
@@ -252,7 +254,7 @@ public class ProtoService extends AbstractProtoService {
                     msg.setStatus(MessageStatus.Sent.value());
                     imMemoryStore.addProtoMessageByTarget(msg.getTarget(),msg,false);
                     WFCMessage.Message sendMessage = convertWFCMessage(msg);
-                    sendMessage(Signal.PUBLISH,SubSignal.MS,sendMessage.toByteArray(),callback);
+                    sendMessage(Signal.PUBLISH,SubSignal.MS,protoMessageId,sendMessage.toByteArray(),callback);
                 }
 
                 @Override
@@ -263,6 +265,7 @@ public class ProtoService extends AbstractProtoService {
                 @Override
                 public void onFailure(int errorCode) {
                       callback.onFailure(errorCode);
+                      imMemoryStore.updateMessageStatus(protoMessageId,MessageStatus.Send_Failure.ordinal());
                 }
             });
         } else {
@@ -272,7 +275,7 @@ public class ProtoService extends AbstractProtoService {
             }
             WFCMessage.Message sendMessage = convertWFCMessage(msg);
             imMemoryStore.addProtoMessageByTarget(msg.getTarget(),msg,false);
-            sendMessage(Signal.PUBLISH,SubSignal.MS,sendMessage.toByteArray(),callback);
+            sendMessage(Signal.PUBLISH,SubSignal.MS,protoMessageId,sendMessage.toByteArray(),callback);
         }
     }
 

@@ -28,6 +28,7 @@ public interface ImMemoryStore {
     boolean deleteMessage(long messageId);
     ProtoMessage[] filterProMessage(ProtoMessage[] protoMessages);
     boolean updateMessageContent(ProtoMessage msg);
+    boolean updateMessageStatus(long protoMessageId,int status);
     ProtoMessage getLastMessage(String target);
     long getTargetLastMessageId(String targetId);
     long getLastMessageSeq();

@@ -203,6 +203,23 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     }
 
     @Override
+    public boolean updateMessageStatus(long protoMessageId, int status) {
+        boolean flag = false;
+        for(Map.Entry<String,List<ProtoMessage>> msgEntry: protoMessageMap.entrySet()){
+            List<ProtoMessage> protoMessages = msgEntry.getValue();
+            for(ProtoMessage protoMessage : protoMessages){
+                if(protoMessage.getMessageId() == protoMessageId){
+                    logger.i("update messageId "+protoMessageId +" status "+status);
+                    protoMessage.setStatus(status);
+                    flag = true;
+                    break;
+                }
+            }
+        }
+        return flag;
+    }
+
+    @Override
     public ProtoMessage getLastMessage(String target) {
         List<ProtoMessage> protoMessages = protoMessageMap.get(target);
         if(protoMessages != null){
@@ -251,10 +268,10 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
         protoConversationInfo.setLine(0);
         protoConversationInfo.setTarget(target);
         ProtoMessage protoMessage = getLastMessage(target);
-        if(protoMessage != null &&(!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
-                || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent())) ){
-            protoMessage.setStatus(5);
-        }
+//        if(protoMessage != null &&(!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
+//                || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent())) ){
+//            protoMessage.setStatus(5);
+//        }
         protoConversationInfo.setLastMessage(protoMessage);
         ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
         protoUnreadCount.setUnread(getUnreadCount(target));
@@ -287,10 +304,10 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
         protoConversationInfo.setLine(0);
         protoConversationInfo.setTarget(groupId);
         ProtoMessage protoMessage = getLastMessage(groupId);
-        if(protoMessage != null &&(!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
-                || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent())) ){
-            protoMessage.setStatus(5);
-        }
+//        if(protoMessage != null &&(!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
+//                || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent())) ){
+//            protoMessage.setStatus(5);
+//        }
         protoConversationInfo.setLastMessage(protoMessage);
         ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
         logger.i("group "+groupId+" unread "+getUnreadCount(groupId));
