@@ -241,9 +241,9 @@ public class ProtoService extends AbstractProtoService {
 
         //文件类型先上传到云
         String localMediaPath = msg.getContent().getLocalMediaPath();
-        log.i("local media path "+localMediaPath+" mediaType "+msg.getContent().getMediaType());
+        log.i("messageId "+msg.getMessageId()+" local media path "+localMediaPath+" mediaType "+msg.getContent().getMediaType());
         //注意这里的位置，不要随意调换有可能影响语音通话
-        callback.onPrepared(msg.getMessageId(),System.currentTimeMillis());
+        callback.onPrepared(System.currentTimeMillis(),System.currentTimeMillis());
         if(!TextUtils.isEmpty(localMediaPath)){
             uploadMedia(localMediaPath, msg.getContent().getMediaType(), new JavaProtoLogic.IUploadMediaCallback() {
                 @Override
@@ -274,6 +274,10 @@ public class ProtoService extends AbstractProtoService {
             imMemoryStore.addProtoMessageByTarget(msg.getTarget(),msg,false);
             sendMessage(Signal.PUBLISH,SubSignal.MS,sendMessage.toByteArray(),callback);
         }
+    }
+
+    public boolean deleteMessage(long messageId){
+        return imMemoryStore.deleteMessage(messageId);
     }
 
 

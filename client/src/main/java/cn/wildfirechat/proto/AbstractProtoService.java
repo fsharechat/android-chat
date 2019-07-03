@@ -25,6 +25,8 @@ import com.qiniu.android.storage.UploadOptions;
 import org.json.JSONObject;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -240,7 +242,32 @@ public abstract class AbstractProtoService implements PushMessageCallback {
                     RequestInfo requestInfo = new RequestInfo(signal,subSignal,callback.getClass(),callback);
                     requestMap.put(messageId,requestInfo);
                 }
+
+                int finalMessageId = messageId;
+                alarmWrapper.schedule(new Timer.Builder().period(6 * 1000)
+                        .wakeup(true)
+                        .action(new Runnable() {
+                            @Override
+                            public void run() {
+                                log.i("send message timeout");
+                                RequestInfo requestInfo = requestMap.remove(finalMessageId);
+                                if(requestInfo != null && requestInfo.getCallback() != null){
+                                    try {
+                                        Method onFailure = requestInfo.getType().getMethod("onFailure",int.class);
+                                        onFailure.invoke(requestInfo.getCallback(),ErrorCode.SERVICE_DIED);
+                                    } catch (NoSuchMethodException e) {
+                                        e.printStackTrace();
+                                    } catch (IllegalAccessException e) {
+                                        e.printStackTrace();
+                                    } catch (InvocationTargetException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                        }).build());
+
                 PreferenceManager.getDefaultSharedPreferences(context).edit().putInt("message_id",++messageId).apply();
+
             }
         });
     }

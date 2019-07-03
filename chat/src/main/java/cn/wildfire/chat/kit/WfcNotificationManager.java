@@ -58,7 +58,7 @@ public class WfcNotificationManager {
     public void startVibrator(Context context){
         Vibrator vb = (Vibrator)context.getSystemService(Service.VIBRATOR_SERVICE);
         if(vb.hasVibrator()){
-            vb.vibrate(100);
+            vb.vibrate(50);
 //            vb.vibrate(new long[]{100, 200, 100, 200}, -1);
         }
     }

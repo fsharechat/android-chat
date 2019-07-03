@@ -505,7 +505,7 @@ public class JavaProtoLogic {
 
     //- (BOOL)deleteMessage:(long)messageId
     public static boolean deleteMessage(long messageId){
-        return false;
+        return protoService.deleteMessage(messageId);
     }
 
     //- (NSArray<WFCCConversationSearchInfo *> *)searchConversation:(NSString *)keyword

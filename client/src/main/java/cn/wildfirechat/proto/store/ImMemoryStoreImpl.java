@@ -163,6 +163,23 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     }
 
     @Override
+    public boolean deleteMessage(long messageId) {
+        boolean flag = false;
+        for(Map.Entry<String,List<ProtoMessage>> msgEntry: protoMessageMap.entrySet()){
+            List<ProtoMessage> protoMessages = msgEntry.getValue();
+            for(ProtoMessage protoMessage : protoMessages){
+                if(protoMessage.getMessageId() == messageId){
+                    logger.i("remove messageId "+messageId);
+                    protoMessages.remove(protoMessage);
+                    flag = true;
+                    break;
+                }
+            }
+        }
+        return flag;
+    }
+
+    @Override
     public boolean updateMessageContent(ProtoMessage msg) {
         String target = msg.getTarget();
         if(TextUtils.isEmpty(target)){
