@@ -165,7 +165,8 @@ public abstract class NormalMessageContentViewHolder extends MessageContentViewH
                 }
                 GroupMember groupMember = groupViewModel.getGroupMember(message.conversation.target, ChatManager.Instance().getUserId());
                 if (groupMember != null && (groupMember.type == GroupMember.GroupMemberType.Manager
-                        || groupMember.type == GroupMember.GroupMemberType.Owner)) {
+                        || groupMember.type == GroupMember.GroupMemberType.Owner) || groupMember.memberId.equals(message.sender)) {
+                    //群消息发送者也能撤回自己的消息，群管理员能撤回任何人发送的消息
                     return false;
                 } else {
                     return true;
