@@ -163,6 +163,20 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     }
 
     @Override
+    public ProtoMessage getMessageByUid(long messageUid) {
+        for(Map.Entry<String,List<ProtoMessage>> msgEntry: protoMessageMap.entrySet()){
+            List<ProtoMessage> protoMessages = msgEntry.getValue();
+            for(ProtoMessage protoMessage : protoMessages){
+                if(protoMessage.getMessageUid() == messageUid){
+                    logger.i("get messageUid "+messageUid);
+                    return protoMessage;
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
     public boolean deleteMessage(long messageId) {
         boolean flag = false;
         for(Map.Entry<String,List<ProtoMessage>> msgEntry: protoMessageMap.entrySet()){
@@ -183,6 +197,16 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     public boolean updateMessageContent(ProtoMessage msg) {
         String target = msg.getTarget();
         if(TextUtils.isEmpty(target)){
+            for(Map.Entry<String,List<ProtoMessage>> msgEntry: protoMessageMap.entrySet()){
+                List<ProtoMessage> protoMessages = msgEntry.getValue();
+                for(ProtoMessage protoMessage : protoMessages){
+                    if(protoMessage.getMessageId() == msg.getMessageId()){
+                        logger.i("update messageId "+msg.getMessageId() +" contentType "+msg.getContent().getType());
+                        protoMessage.setContent(msg.getContent());
+                        return true;
+                    }
+                }
+            }
             return false;
         } else {
             ProtoMessage removeMessage = null;
@@ -211,6 +235,23 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
                 if(protoMessage.getMessageId() == protoMessageId){
                     logger.i("update messageId "+protoMessageId +" status "+status);
                     protoMessage.setStatus(status);
+                    flag = true;
+                    break;
+                }
+            }
+        }
+        return flag;
+    }
+
+    @Override
+    public boolean updateMessageUid(long protoMessageId, long messageUid) {
+        boolean flag = false;
+        for(Map.Entry<String,List<ProtoMessage>> msgEntry: protoMessageMap.entrySet()){
+            List<ProtoMessage> protoMessages = msgEntry.getValue();
+            for(ProtoMessage protoMessage : protoMessages){
+                if(protoMessage.getMessageId() == protoMessageId){
+                    logger.i("update proto messageId "+protoMessageId +" messageUid "+messageUid);
+                    protoMessage.setMessageUid(messageUid);
                     flag = true;
                     break;
                 }

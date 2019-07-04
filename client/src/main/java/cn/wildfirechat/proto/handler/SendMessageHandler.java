@@ -27,11 +27,12 @@ public class SendMessageHandler extends AbstractMessageHandler {
        RequestInfo requestInfo = protoService.requestMap.remove(header.getMessageId());
        JavaProtoLogic.ISendMessageCallback sendMessageCallback = (JavaProtoLogic.ISendMessageCallback) requestInfo.getCallback();
        if(errorCode == 0){
-           long messageId = byteBufferList.getLong();
+           long messageUid = byteBufferList.getLong();
            long timestamp = byteBufferList.getLong();
-           ProtoService.log.i("messageId "+messageId+" timestamp "+timestamp);
+           ProtoService.log.i("messageUid "+messageUid+" timestamp "+timestamp);
 //           sendMessageCallback.onPrepared(messageId,timestamp);
-           sendMessageCallback.onSuccess(messageId,timestamp);
+           sendMessageCallback.onSuccess(messageUid,timestamp);
+           protoService.getImMemoryStore().updateMessageUid(requestInfo.getProtoMessageId(),messageUid);
            protoService.getImMemoryStore().updateMessageStatus(requestInfo.getProtoMessageId(), MessageStatus.Sent.ordinal());
            protoService.getImMemoryStore().increaseMessageSeq();
        } else {

@@ -25,10 +25,12 @@ public interface ImMemoryStore {
     void addProtoMessageByTarget(String target, ProtoMessage protoMessage, boolean isPush);
     ProtoMessage[] getMessages(int conversationType, String target);
     ProtoMessage getMessage(long messageId);
+    ProtoMessage getMessageByUid(long messageUid);
     boolean deleteMessage(long messageId);
     ProtoMessage[] filterProMessage(ProtoMessage[] protoMessages);
     boolean updateMessageContent(ProtoMessage msg);
     boolean updateMessageStatus(long protoMessageId,int status);
+    boolean updateMessageUid(long protoMessageId,long messageUid);
     ProtoMessage getLastMessage(String target);
     long getTargetLastMessageId(String targetId);
     long getLastMessageSeq();

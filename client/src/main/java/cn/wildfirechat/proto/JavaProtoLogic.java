@@ -294,7 +294,7 @@ public class JavaProtoLogic {
     }
 
     public static void recallMessage(long messageUid, JavaProtoLogic.IGeneralCallback callback){
-
+       protoService.recallMessage(messageUid,callback);
     }
 
     public static long insertMessage(ProtoMessage msg){
@@ -384,7 +384,7 @@ public class JavaProtoLogic {
     }
 
     public static ProtoMessage getMessageByUid(long messageUid){
-        return new ProtoMessage();
+        return protoService.getMessageByUid(messageUid);
     }
 
     public static ProtoUnreadCount getUnreadCount(int conversationType, String target, int line){

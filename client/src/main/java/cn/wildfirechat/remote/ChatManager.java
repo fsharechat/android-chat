@@ -1356,6 +1356,7 @@ public class ChatManager {
                 public void onSuccess() throws RemoteException {
                     msg.content = new RecallMessageContent(userId, msg.messageUid);
                     ((RecallMessageContent) msg.content).fromSelf = true;
+                    ChatManager.Instance().updateMessage(msg.messageId,msg.content);
                     callback.onSuccess();
                     for (OnRecallMessageListener listener : recallMessageListeners) {
                         listener.onRecallMessage(msg);

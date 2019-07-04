@@ -39,6 +39,8 @@ import cn.wildfirechat.proto.handler.NotifyFriendRequestHandler;
 import cn.wildfirechat.proto.handler.NotifyMessageHandler;
 import cn.wildfirechat.proto.handler.QiniuTokenHandler;
 import cn.wildfirechat.proto.handler.QuitGroupHandler;
+import cn.wildfirechat.proto.handler.RecallMessageHandler;
+import cn.wildfirechat.proto.handler.RecallNotifyMessageHandler;
 import cn.wildfirechat.proto.handler.ReceiveMessageHandler;
 import cn.wildfirechat.proto.handler.SearchUserResultMessageHandler;
 import cn.wildfirechat.proto.handler.SendMessageHandler;
@@ -80,6 +82,8 @@ public class ProtoService extends AbstractProtoService {
         messageHandlers.add(new ModifyGroupInfoHandler(this));
         messageHandlers.add(new ModifyMyInfoHandler(this));
         messageHandlers.add(new QiniuTokenHandler(this));
+        messageHandlers.add(new RecallMessageHandler(this));
+        messageHandlers.add(new RecallNotifyMessageHandler(this));
     }
 
     public void searchUser(String keyword, JavaProtoLogic.ISearchUserCallback callback){
@@ -227,6 +231,10 @@ public class ProtoService extends AbstractProtoService {
 
     public ProtoMessage getMessage(long messageId){
         return imMemoryStore.getMessage(messageId);
+    }
+
+    public ProtoMessage getMessageByUid(long messageUid){
+        return imMemoryStore.getMessageByUid(messageUid);
     }
 
     public boolean updateMessageContent(ProtoMessage msg){
@@ -411,6 +419,13 @@ public class ProtoService extends AbstractProtoService {
         sendMessage(Signal.PUBLISH,SubSignal.GMI,modifyGroupInfoBuilder.build().toByteArray(),callback);
     }
 
+    public void recallMessage(long messageUid, JavaProtoLogic.IGeneralCallback callback){
+       log.i("recall message Uid "+messageUid);
+        WFCMessage.INT64Buf int64Buf = WFCMessage.INT64Buf.newBuilder()
+                .setId(messageUid)
+                .build();
+       sendMessage(Signal.PUBLISH,SubSignal.MR,int64Buf.toByteArray(),callback);
+    }
 
 
 }
