@@ -140,7 +140,7 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     public ProtoMessage[] filterProMessage(ProtoMessage[] protoMessages){
         List<ProtoMessage> destPro = new ArrayList<>();
         for(ProtoMessage sourceProto : protoMessages){
-            if(sourceProto.getContent().getType() < 400){
+            if(sourceProto.getContent().getType() <= 400){
                 destPro.add(sourceProto);
             }
         }

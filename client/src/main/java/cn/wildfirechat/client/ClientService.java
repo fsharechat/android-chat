@@ -1609,7 +1609,6 @@ public class ClientService extends Service implements
 
     private MessageContent contentOfType(int type) {
         Class<? extends MessageContent> cls = contentMapper.get(type);
-        Log.i("comsince","messageContent class  "+cls);
         if (cls != null) {
             try {
                 return cls.newInstance();
