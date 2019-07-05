@@ -100,6 +100,11 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
 
                 //接收到的推送消息
                 List<ProtoMessage> protoMessages = protoMessageMap.get(target);
+                //防止消息过多导致内存剧增
+                if(protoMessages != null && protoMessages.size() > 1000){
+                    logger.i("remove "+target+" protomessage "+protoMessage.getMessageId());
+                    protoMessages.remove(0);
+                }
                 if(protoMessages != null){
                     protoMessages.add(protoMessage);
                 } else {
@@ -109,7 +114,7 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
 
                 protoMessageMap.put(target,protoMessages);
 
-                if(isPush){
+                if(isPush && protoMessage.getContent().getType() <= 400){
                     //设置未读消息
                     int unReadCount = 0;
                     if(unReadCountMap.get(protoMessage.getTarget()) != null){

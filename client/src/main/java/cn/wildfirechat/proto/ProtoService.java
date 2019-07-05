@@ -203,7 +203,7 @@ public class ProtoService extends AbstractProtoService {
     }
 
     public ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser){
-        log.i("conversationType "+conversationType+" target "+target+" line "+line +" fromIndex "+fromIndex+" count "+" withuser "+withUser);
+        log.i("conversationType "+conversationType+" target "+target+" line "+line +" fromIndex "+fromIndex+" count "+count+" withuser "+withUser);
         ProtoMessage[] protoMessages = null;
         if(!TextUtils.isEmpty(target)){
             protoMessages = imMemoryStore.getMessages(conversationType,target);
