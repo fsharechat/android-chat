@@ -2,6 +2,7 @@ package cn.wildfirechat.proto.store;
 
 
 import java.util.List;
+import java.util.Map;
 
 import cn.wildfirechat.model.ProtoConversationInfo;
 import cn.wildfirechat.model.ProtoFriendRequest;
@@ -52,5 +53,8 @@ public interface ImMemoryStore {
     ProtoUserInfo getUserInfo(String userId);
     ProtoUserInfo[] getUserInfos(String[] userIds);
     void addUserInfo(ProtoUserInfo protoUserInfos);
+    void setUserSetting(int scope, String key, String value);
+    String getUserSetting(int scope, String key);
+    Map<String, String> getUserSettings(int scope);
     void stop();
 }

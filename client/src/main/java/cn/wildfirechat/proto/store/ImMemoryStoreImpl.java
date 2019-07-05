@@ -7,13 +7,14 @@ import com.comsince.github.logger.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
+import cn.wildfirechat.message.TextMessageContent;
 import cn.wildfirechat.message.core.MessageContentType;
 import cn.wildfirechat.model.Conversation;
 import cn.wildfirechat.model.ProtoConversationInfo;
@@ -24,6 +25,9 @@ import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoUnreadCount;
 import cn.wildfirechat.model.ProtoUserInfo;
 import cn.wildfirechat.proto.ProtoConstants;
+
+import static cn.wildfirechat.remote.UserSettingScope.ConversationSilent;
+import static cn.wildfirechat.remote.UserSettingScope.ConversationTop;
 
 public class ImMemoryStoreImpl implements ImMemoryStore{
     Log logger = LoggerFactory.getLogger(ImMemoryStoreImpl.class);
@@ -37,6 +41,7 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     private Map<String,List<ProtoGroupMember>> groupMembersMap = new ConcurrentHashMap<>();
     private Map<String,ProtoUserInfo> userInfoMap = new ConcurrentHashMap<>();
     private List<ProtoFriendRequest> protoFriendRequestList = new ArrayList<>();
+    private Map<Integer,Map<String,String>> userSettingMap = new ConcurrentHashMap<>();
     private AtomicLong lastMessageSeq = new AtomicLong(0);
     private long friendRequestHead = 0;
     @Override
@@ -308,6 +313,8 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
         protoConversationInfo.setConversationType(Conversation.ConversationType.Single.ordinal());
         protoConversationInfo.setLine(0);
         protoConversationInfo.setTarget(target);
+        protoConversationInfo.setTop(conversationSetting(ConversationTop,Conversation.ConversationType.Single.ordinal(),target));
+        protoConversationInfo.setSilent(conversationSetting(ConversationSilent,Conversation.ConversationType.Single.ordinal(),target));
         ProtoMessage protoMessage = getLastMessage(target);
 //        if(protoMessage != null &&(!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
 //                || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent())) ){
@@ -319,6 +326,16 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
         protoConversationInfo.setUnreadCount(protoUnreadCount);
         protoConversationInfo.setTimestamp(System.currentTimeMillis());
         privateConversations.put(target,protoConversationInfo);
+    }
+
+    private boolean conversationSetting(int scope,int conversationType,String target){
+        boolean flag = false;
+        String top = getUserSetting(scope,conversationType + "-" + 0 + "-" + target);
+        if(!TextUtils.isEmpty(top)){
+            flag = top.equals("1");
+        }
+        logger.i(scope+"-"+conversationType + "-" + 0 + "-" + target+" flag->"+flag);
+        return flag;
     }
 
     @Override
@@ -344,6 +361,8 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
         protoConversationInfo.setConversationType(Conversation.ConversationType.Group.ordinal());
         protoConversationInfo.setLine(0);
         protoConversationInfo.setTarget(groupId);
+        protoConversationInfo.setTop(conversationSetting(ConversationTop,Conversation.ConversationType.Group.ordinal(),groupId));
+        protoConversationInfo.setSilent(conversationSetting(ConversationSilent,Conversation.ConversationType.Group.ordinal(),groupId));
         ProtoMessage protoMessage = getLastMessage(groupId);
 //        if(protoMessage != null &&(!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
 //                || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent())) ){
@@ -363,9 +382,12 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
         List<ProtoConversationInfo> protoConversationInfoList = new ArrayList<>();
         if(groupConversations != null){
             for(Map.Entry<String,ProtoConversationInfo> entry : groupConversations.entrySet()){
-                ProtoConversationInfo groupConversation = entry.getValue();ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
+                ProtoConversationInfo groupConversation = entry.getValue();
+                ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
                 protoUnreadCount.setUnread(getUnreadCount(groupConversation.getTarget()));
                 groupConversation.setUnreadCount(protoUnreadCount);
+                groupConversation.setTop(conversationSetting(ConversationTop,Conversation.ConversationType.Group.ordinal(),groupConversation.getTarget()));
+                groupConversation.setSilent(conversationSetting(ConversationSilent,Conversation.ConversationType.Group.ordinal(),groupConversation.getTarget()));
                 protoConversationInfoList.add(groupConversation);
             }
         }
@@ -480,6 +502,30 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     }
 
     @Override
+    public void setUserSetting(int scope, String key, String value) {
+        Map<String,String> scopeMap = userSettingMap.get(scope);
+        if(scopeMap == null){
+            scopeMap = new HashMap<>();
+        }
+        scopeMap.put(key,value);
+        userSettingMap.put(scope,scopeMap);
+    }
+
+    @Override
+    public String getUserSetting(int scope, String key) {
+        Map<String,String> scopeMap = userSettingMap.get(scope);
+        if(scopeMap != null){
+            return scopeMap.get(key);
+        }
+        return null;
+    }
+
+    @Override
+    public Map<String, String> getUserSettings(int scope) {
+        return userSettingMap.get(scope);
+    }
+
+    @Override
     public long getFriendRequestHead() {
         return friendRequestHead;
     }
@@ -526,5 +572,6 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
         groupInfoMap.clear();
         groupMembersMap.clear();
         userInfoMap.clear();
+        userSettingMap.clear();
     }
 }

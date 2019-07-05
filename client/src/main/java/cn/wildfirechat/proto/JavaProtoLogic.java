@@ -409,7 +409,9 @@ public class JavaProtoLogic {
 
     public static void removeConversation(int conversationType, String target, int line, boolean clearMsg){}
 
-    public static void setConversationTop(int conversationType, String target, int line, boolean top){}
+    public static void setConversationTop(int conversationType, String target, int line, boolean top){
+        logger.i("setConversationTop "+conversationType+" target "+target+" top "+false);
+    }
 
     public static void setConversationDraft(int conversationType, String target, int line, String draft){}
 
@@ -607,12 +609,15 @@ public class JavaProtoLogic {
     public static void destoryChannel(String channelId, JavaProtoLogic.IGeneralCallback callback){}
 
     public static String getUserSetting(int scope, String key){
-        return null;
+        return protoService.getImMemoryStore().getUserSetting(scope,key);
     }
     public static Map<String, String> getUserSettings(int scope){
-        return new HashMap<>();
+        return protoService.getImMemoryStore().getUserSettings(scope);
     }
-    public static void setUserSetting(int scope, String key, String value, JavaProtoLogic.IGeneralCallback callback){}
+    public static void setUserSetting(int scope, String key, String value, JavaProtoLogic.IGeneralCallback callback){
+        logger.i("setUserSetting scope "+scope+" key "+key+" value "+value);
+        protoService.getImMemoryStore().setUserSetting(scope,key,value);
+    }
     public static void setDeviceToken(String appName, String token, int pushType){}
     public static void setDNSResult(String[] serverIPs){}
 
