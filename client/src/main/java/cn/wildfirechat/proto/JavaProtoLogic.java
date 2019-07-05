@@ -389,6 +389,7 @@ public class JavaProtoLogic {
         if(protoConversationInfos != null){
             for(ProtoConversationInfo protoConversationInfo : protoConversationInfos){
                 if(protoConversationInfo.getTarget().equals(target)){
+                    protoConversationInfo.setTimestamp(System.currentTimeMillis());
                     return protoConversationInfo;
                 }
             }
