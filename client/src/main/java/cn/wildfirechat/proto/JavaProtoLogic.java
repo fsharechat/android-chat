@@ -3,6 +3,7 @@ import com.comsince.github.logger.Log;
 import com.comsince.github.logger.LoggerFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import cn.wildfirechat.alarm.AlarmWrapper;
@@ -311,12 +312,36 @@ public class JavaProtoLogic {
 
     public static  ProtoConversationInfo[] getConversations(int[] conversationTypes, int[] lines){
         List<ProtoConversationInfo> protoConversationInfos = new ArrayList<>();
+        List<ProtoConversationInfo> privateConversationInfos = null;
+        List<ProtoConversationInfo> groupProtoConversationInfos = null;
         for(int conversationType : conversationTypes){
             if(conversationType == ProtoConstants.ConversationType.ConversationType_Private){
-                protoConversationInfos.addAll(protoService.getImMemoryStore().getPrivateConversations());
+                privateConversationInfos = protoService.getImMemoryStore().getPrivateConversations();
+                Iterator<ProtoConversationInfo> privateIterator = privateConversationInfos.iterator();
+                while (privateIterator.hasNext()){
+                    ProtoConversationInfo privateProtoConversationInfo = privateIterator.next();
+                    if(privateProtoConversationInfo.isTop()){
+                        privateIterator.remove();
+                        protoConversationInfos.add(privateProtoConversationInfo);
+                    }
+                }
             } else if(conversationType == ProtoConstants.ConversationType.ConversationType_Group){
-                protoConversationInfos.addAll(protoService.getImMemoryStore().getGroupConversations());
+                groupProtoConversationInfos = protoService.getImMemoryStore().getGroupConversations();
+                Iterator<ProtoConversationInfo> groupIterator = groupProtoConversationInfos.iterator();
+                while (groupIterator.hasNext()){
+                    ProtoConversationInfo groupProtoConversationInfo = groupIterator.next();
+                    if(groupProtoConversationInfo.isTop()){
+                        groupIterator.remove();
+                        protoConversationInfos.add(groupProtoConversationInfo);
+                    }
+                }
             }
+        }
+        if(privateConversationInfos != null && privateConversationInfos.size() > 0){
+            protoConversationInfos.addAll(privateConversationInfos);
+        }
+        if(groupProtoConversationInfos != null && groupProtoConversationInfos.size() > 0){
+            protoConversationInfos.addAll(groupProtoConversationInfos);
         }
         ProtoConversationInfo[] protoConversationInfosArr = new ProtoConversationInfo[protoConversationInfos.size()];
         protoConversationInfos.toArray(protoConversationInfosArr);
