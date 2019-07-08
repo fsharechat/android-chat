@@ -101,10 +101,10 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
                 //接收到的推送消息
                 List<ProtoMessage> protoMessages = protoMessageMap.get(target);
                 //防止消息过多导致内存剧增
-                if(protoMessages != null && protoMessages.size() > 1000){
-                    logger.i("remove "+target+" protomessage "+protoMessage.getMessageId());
-                    protoMessages.remove(0);
-                }
+//                if(protoMessages != null && protoMessages.size() > 1000){
+//                    logger.i("remove "+target+" protomessage "+protoMessage.getMessageId());
+//                    protoMessages.remove(0);
+//                }
                 if(protoMessages != null){
                     protoMessages.add(protoMessage);
                 } else {
@@ -143,6 +143,11 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
             return filterProMessage(protoMessagesArr);
         }
 
+        return new ProtoMessage[0];
+    }
+
+    @Override
+    public ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser) {
         return new ProtoMessage[0];
     }
 
@@ -298,8 +303,8 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     }
 
     @Override
-    public void increaseMessageSeq() {
-         lastMessageSeq.incrementAndGet();
+    public long increaseMessageSeq() {
+         return lastMessageSeq.incrementAndGet();
     }
 
     @Override

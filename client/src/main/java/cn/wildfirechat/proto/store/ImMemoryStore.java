@@ -25,6 +25,7 @@ public interface ImMemoryStore {
     void addProtoFriendRequest(ProtoFriendRequest protoFriendRequest);
     void addProtoMessageByTarget(String target, ProtoMessage protoMessage, boolean isPush);
     ProtoMessage[] getMessages(int conversationType, String target);
+    ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser);
     ProtoMessage getMessage(long messageId);
     ProtoMessage getMessageByUid(long messageUid);
     boolean deleteMessage(long messageId);
@@ -36,7 +37,7 @@ public interface ImMemoryStore {
     long getTargetLastMessageId(String targetId);
     long getLastMessageSeq();
     void updateMessageSeq(long messageSeq);
-    void increaseMessageSeq();
+    long increaseMessageSeq();
     void clearUnreadStatus(int conversationType, String target, int line);
     int getUnreadCount(String target);
     void createPrivateConversation(String target);

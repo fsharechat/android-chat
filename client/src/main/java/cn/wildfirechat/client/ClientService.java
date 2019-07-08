@@ -1693,7 +1693,7 @@ public class ClientService extends Service implements
         handler = new Handler(Looper.getMainLooper());
         alarmWrapper = new AlarmWrapper(this,"clientservice");
         alarmWrapper.start();
-        JavaProtoLogic.init(alarmWrapper);
+        JavaProtoLogic.init(this,alarmWrapper);
         Mars.init(getApplicationContext(), handler);
         if (mConnectionReceiver == null) {
             mConnectionReceiver = new ConnectionReceiver();

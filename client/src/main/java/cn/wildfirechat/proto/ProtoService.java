@@ -1,4 +1,5 @@
 package cn.wildfirechat.proto;
+import android.content.Context;
 import android.text.TextUtils;
 import com.comsince.github.core.future.SimpleFuture;
 import com.comsince.github.push.Signal;
@@ -44,14 +45,14 @@ import cn.wildfirechat.proto.handler.RecallNotifyMessageHandler;
 import cn.wildfirechat.proto.handler.ReceiveMessageHandler;
 import cn.wildfirechat.proto.handler.SearchUserResultMessageHandler;
 import cn.wildfirechat.proto.handler.SendMessageHandler;
+import cn.wildfirechat.proto.store.DataStoreFactory;
 import cn.wildfirechat.proto.store.ImMemoryStore;
-import cn.wildfirechat.proto.store.ImMemoryStoreImpl;
 
 public class ProtoService extends AbstractProtoService {
 
-    public ProtoService(AlarmWrapper alarmWrapper){
+    public ProtoService(Context context,AlarmWrapper alarmWrapper){
         super(alarmWrapper);
-        imMemoryStore = new ImMemoryStoreImpl();
+        imMemoryStore = DataStoreFactory.getDataStore(context);
         uploadManager = new UploadManager();
         initHandlers();
     }

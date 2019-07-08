@@ -1,4 +1,6 @@
 package cn.wildfirechat.proto;
+import android.content.Context;
+
 import com.comsince.github.logger.Log;
 import com.comsince.github.logger.LoggerFactory;
 import java.util.ArrayList;
@@ -257,9 +259,9 @@ public class JavaProtoLogic {
         }
     }
 
-    public static void init(AlarmWrapper alarmWrapper){
+    public static void init(Context context,AlarmWrapper alarmWrapper){
         logger.i("init proto service");
-        protoService = new ProtoService(alarmWrapper);
+        protoService = new ProtoService(context,alarmWrapper);
     }
 
     public static void stopProtoService(){
