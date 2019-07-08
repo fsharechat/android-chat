@@ -19,9 +19,6 @@ import android.text.TextUtils;
 import android.util.Log;
 import androidx.annotation.Nullable;
 import com.comsince.github.logger.LoggerFactory;
-import com.tencent.mars.Mars;
-import com.tencent.mars.app.AppLogic;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 import cn.wildfirechat.alarm.AlarmWrapper;
 import cn.wildfirechat.message.CallStartMessageContent;
 import cn.wildfirechat.message.FileMessageContent;
@@ -90,15 +86,12 @@ import cn.wildfirechat.model.UnreadCount;
 import cn.wildfirechat.model.UserInfo;
 import cn.wildfirechat.proto.AndroidLogger;
 import cn.wildfirechat.proto.JavaProtoLogic;
-import cn.wildfirechat.proto.ProtoService;
 import cn.wildfirechat.remote.RecoverReceiver;
-
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusConnected;
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusLogout;
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusUnconnected;
 import static cn.wildfirechat.remote.UserSettingScope.ConversationSilent;
 import static cn.wildfirechat.remote.UserSettingScope.ConversationTop;
-import static com.tencent.mars.comm.PlatformComm.context;
 
 
 /**
@@ -696,7 +689,7 @@ public class ClientService extends Service implements
             }
             mBackupDeviceToken = token;
             mBackupPushType = pushType;
-            PreferenceManager.getDefaultSharedPreferences(context).edit().putInt("mars_core_push_type", pushType).commit();
+            PreferenceManager.getDefaultSharedPreferences(ClientService.this).edit().putInt("mars_core_push_type", pushType).commit();
             if (mConnectionStatus != ConnectionStatusConnected) {
                 return;
             }
@@ -1694,7 +1687,7 @@ public class ClientService extends Service implements
         alarmWrapper = new AlarmWrapper(this,"clientservice");
         alarmWrapper.start();
         JavaProtoLogic.init(this,alarmWrapper);
-        Mars.init(getApplicationContext(), handler);
+        //Mars.init(getApplicationContext(), handler);
         if (mConnectionReceiver == null) {
             mConnectionReceiver = new ConnectionReceiver();
             IntentFilter filter = new IntentFilter();
@@ -1885,17 +1878,17 @@ public class ClientService extends Service implements
     @Override
     public AppLogic.DeviceInfo getDeviceType() {
         if (info == null) {
-            String imei = PreferenceManager.getDefaultSharedPreferences(context).getString("mars_core_uid", "");
+            String imei = PreferenceManager.getDefaultSharedPreferences(ClientService.this).getString("mars_core_uid", "");
             if (TextUtils.isEmpty(imei)) {
-                imei = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
+                imei = Settings.Secure.getString(ClientService.this.getContentResolver(), Settings.Secure.ANDROID_ID);
                 if (TextUtils.isEmpty(imei)) {
                     imei = UUID.randomUUID().toString();
                 }
                 imei += System.currentTimeMillis();
-                PreferenceManager.getDefaultSharedPreferences(context).edit().putString("mars_core_uid", imei).commit();
+                PreferenceManager.getDefaultSharedPreferences(ClientService.this).edit().putString("mars_core_uid", imei).commit();
             }
             info = new AppLogic.DeviceInfo(imei);
-            info.packagename = context.getPackageName();
+            info.packagename = ClientService.this.getPackageName();
             // TODO 自行处理吧，这些信息不是必须的
             info.carriername = "CMCC";
             info.device = "小米6";

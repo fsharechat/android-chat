@@ -1,5 +1,6 @@
 package cn.wildfirechat.proto;
 
+import android.content.Context;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
@@ -51,10 +52,10 @@ import cn.wildfirechat.proto.store.ImMemoryStore;
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusConnected;
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusConnecting;
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusUnconnected;
-import static com.tencent.mars.comm.PlatformComm.context;
 
 public abstract class AbstractProtoService implements PushMessageCallback {
     public static Log log = LoggerFactory.getLogger(ProtoService.class);
+    private Context context;
     private String userName;
     private String token;
     private AndroidNIOClient androidNIOClient;
@@ -72,8 +73,9 @@ public abstract class AbstractProtoService implements PushMessageCallback {
     Timer reconnectTimer;
     int interval = 0;
 
-    public AbstractProtoService(AlarmWrapper alarmWrapper){
+    public AbstractProtoService(Context context,AlarmWrapper alarmWrapper){
         this.alarmWrapper = alarmWrapper;
+        this.context = context;
     }
 
     public void connect(String host, int shortPort){

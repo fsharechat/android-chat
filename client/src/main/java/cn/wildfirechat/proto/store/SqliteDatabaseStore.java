@@ -57,7 +57,7 @@ abstract class SqliteDatabaseStore implements ImMemoryStore{
         try {
             ByteArrayInputStream mem_in = new ByteArrayInputStream(bytes);
             ObjectInputStream in = new ObjectInputStream(mem_in);
-            Object resultObj = (HashMap<String, String>) in.readObject();
+            Object resultObj = in.readObject();
             in.close();
             mem_in.close();
             return resultObj;

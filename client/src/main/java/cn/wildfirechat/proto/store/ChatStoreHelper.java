@@ -16,7 +16,7 @@ public class ChatStoreHelper extends SQLiteOpenHelper {
             "DROP TABLE IF EXISTS '" + TABLE_MESSAGES + "'";
     private static final String queryCreateMessagesTable = "CREATE TABLE IF NOT EXISTS 'messages' " +
             "(id INTEGER PRIMARY KEY," +
-            " target TEXT," +
+            " message_target TEXT," +
             " message_id DOUBLE DEFAULT 0," +
             " message_uid DOUBLE DEFAULT 0," +
             " message_data BLOB, " +

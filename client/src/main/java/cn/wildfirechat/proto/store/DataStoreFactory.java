@@ -5,6 +5,9 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
+import com.comsince.github.logger.Log;
+import com.comsince.github.logger.LoggerFactory;
+
 import java.util.List;
 import java.util.Map;
 import cn.wildfirechat.message.core.MessageContentType;
@@ -16,7 +19,7 @@ import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoUserInfo;
 
 public class DataStoreFactory implements ImMemoryStore{
-
+    Log logger = LoggerFactory.getLogger(DataStoreFactory.class);
     private ImMemoryStore memoryStore;
     private ProtoMessageDataStore protoMessageDataStore;
     private static DataStoreFactory dataStoreFactory;
@@ -111,8 +114,7 @@ public class DataStoreFactory implements ImMemoryStore{
 
     @Override
     public ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser) {
-
-        return new ProtoMessage[0];
+        return memoryStore.filterProMessage(protoMessageDataStore.getMessages(conversationType,target,line,fromIndex,before,count,withUser));
     }
 
     @Override
@@ -165,6 +167,7 @@ public class DataStoreFactory implements ImMemoryStore{
     @Override
     public ProtoMessage getLastMessage(String target) {
         ProtoMessage protoMessage = memoryStore.getLastMessage(target);
+        logger.i("get message from memory exists "+(protoMessage != null));
         if(protoMessage == null){
             protoMessage = protoMessageDataStore.getLastMessage(target);
         }

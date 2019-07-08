@@ -51,7 +51,7 @@ import cn.wildfirechat.proto.store.ImMemoryStore;
 public class ProtoService extends AbstractProtoService {
 
     public ProtoService(Context context,AlarmWrapper alarmWrapper){
-        super(alarmWrapper);
+        super(context,alarmWrapper);
         imMemoryStore = DataStoreFactory.getDataStore(context);
         uploadManager = new UploadManager();
         initHandlers();
@@ -207,26 +207,26 @@ public class ProtoService extends AbstractProtoService {
         log.i("conversationType "+conversationType+" target "+target+" line "+line +" fromIndex "+fromIndex+" count "+count+" withuser "+withUser);
         ProtoMessage[] protoMessages = null;
         if(!TextUtils.isEmpty(target)){
-            protoMessages = imMemoryStore.getMessages(conversationType,target);
+            protoMessages = imMemoryStore.getMessages(conversationType,target,line,fromIndex,before,count,withUser);
         }
 
-        if(protoMessages == null){
-            long targetLastMessageId = imMemoryStore.getTargetLastMessageId(target);
-            log.i("targetLastMessageId "+targetLastMessageId);
-            WFCMessage.PullMessageRequest pullMessageRequest = WFCMessage.PullMessageRequest.newBuilder()
-                    .setId(targetLastMessageId)
-                    .setType(conversationType)
-                    .build();
-            SimpleFuture<ProtoMessage[]> pullMessageFuture = sendMessageSync(Signal.PUBLISH,SubSignal.MP,pullMessageRequest.toByteArray());
-            try {
-                pullMessageFuture.get(500,TimeUnit.MILLISECONDS);
-                if(!TextUtils.isEmpty(target)){
-                    protoMessages = imMemoryStore.getMessages(conversationType,target);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+//        if(protoMessages == null){
+//            long targetLastMessageId = imMemoryStore.getTargetLastMessageId(target);
+//            log.i("targetLastMessageId "+targetLastMessageId);
+//            WFCMessage.PullMessageRequest pullMessageRequest = WFCMessage.PullMessageRequest.newBuilder()
+//                    .setId(targetLastMessageId)
+//                    .setType(conversationType)
+//                    .build();
+//            SimpleFuture<ProtoMessage[]> pullMessageFuture = sendMessageSync(Signal.PUBLISH,SubSignal.MP,pullMessageRequest.toByteArray());
+//            try {
+//                pullMessageFuture.get(500,TimeUnit.MILLISECONDS);
+//                if(!TextUtils.isEmpty(target)){
+//                    protoMessages = imMemoryStore.getMessages(conversationType,target);
+//                }
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        }
         return protoMessages;
     }
 
