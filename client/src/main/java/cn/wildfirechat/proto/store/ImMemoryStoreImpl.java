@@ -416,6 +416,11 @@ public class ImMemoryStoreImpl implements ImMemoryStore{
     }
 
     @Override
+    public ProtoConversationInfo[] getConversations(int[] conversationTypes, int[] lines) {
+        return new ProtoConversationInfo[0];
+    }
+
+    @Override
     public ProtoGroupInfo getGroupInfo(String groupId) {
         return groupInfoMap.get(groupId);
     }

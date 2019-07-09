@@ -97,14 +97,7 @@ public class DataStoreFactory implements ImMemoryStore{
 
     @Override
     public void addProtoMessageByTarget(String target, ProtoMessage protoMessage, boolean isPush) {
-        memoryStore.addProtoMessageByTarget(target,protoMessage,isPush);
-        if(protoMessage.getContent().getType() != MessageContentType.ContentType_Typing){
-            if((!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
-                    || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent()))
-                    || protoMessage.getContent().getBinaryContent() != null){
-                protoMessageDataStore.addProtoMessageByTarget(target,protoMessage,isPush);
-            }
-        }
+        protoMessageDataStore.addProtoMessageByTarget(target,protoMessage,isPush);
     }
 
     @Override
@@ -114,31 +107,26 @@ public class DataStoreFactory implements ImMemoryStore{
 
     @Override
     public ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser) {
-        return memoryStore.filterProMessage(protoMessageDataStore.getMessages(conversationType,target,line,fromIndex,before,count,withUser));
+        ProtoMessage[] protoMessages = protoMessageDataStore.getMessages(conversationType,target,line,fromIndex,before,count,withUser);
+        if(protoMessages != null){
+            return filterProMessage(protoMessages);
+        }
+        return null;
     }
 
     @Override
     public ProtoMessage getMessage(long messageId) {
-        ProtoMessage protoMessage = memoryStore.getMessage(messageId);
-        if(protoMessage == null){
-            protoMessage = protoMessageDataStore.getMessage(messageId);
-        }
-        return protoMessage;
+        return protoMessageDataStore.getMessage(messageId);
     }
 
     @Override
     public ProtoMessage getMessageByUid(long messageUid) {
-        ProtoMessage protoMessage = memoryStore.getMessageByUid(messageUid);
-        if(protoMessage == null){
-            protoMessage = protoMessageDataStore.getMessageByUid(messageUid);
-        }
-        return protoMessage;
+        return protoMessageDataStore.getMessageByUid(messageUid);
     }
 
     @Override
     public boolean deleteMessage(long messageId) {
-        protoMessageDataStore.deleteMessage(messageId);
-        return memoryStore.deleteMessage(messageId);
+        return protoMessageDataStore.deleteMessage(messageId);
     }
 
     @Override
@@ -148,92 +136,84 @@ public class DataStoreFactory implements ImMemoryStore{
 
     @Override
     public boolean updateMessageContent(ProtoMessage msg) {
-        protoMessageDataStore.updateMessageContent(msg);
-        return memoryStore.updateMessageContent(msg);
+        return protoMessageDataStore.updateMessageContent(msg);
     }
 
     @Override
     public boolean updateMessageStatus(long protoMessageId, int status) {
-        protoMessageDataStore.updateMessageStatus(protoMessageId,status);
-        return memoryStore.updateMessageStatus(protoMessageId,status);
+        return protoMessageDataStore.updateMessageStatus(protoMessageId,status);
     }
 
     @Override
     public boolean updateMessageUid(long protoMessageId, long messageUid) {
-        protoMessageDataStore.updateMessageUid(protoMessageId,messageUid);
-        return memoryStore.updateMessageUid(protoMessageId,messageUid);
+        return protoMessageDataStore.updateMessageUid(protoMessageId,messageUid);
     }
 
     @Override
     public ProtoMessage getLastMessage(String target) {
-        ProtoMessage protoMessage = memoryStore.getLastMessage(target);
-        logger.i("get message from memory exists "+(protoMessage != null));
-        if(protoMessage == null){
-            protoMessage = protoMessageDataStore.getLastMessage(target);
-        }
-        return protoMessage;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public long getTargetLastMessageId(String targetId) {
-        return memoryStore.getTargetLastMessageId(targetId);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public long getLastMessageSeq() {
-        long lastMessageSeq = memoryStore.getLastMessageSeq();
-        if(lastMessageSeq == 0){
-            lastMessageSeq = preferences.getLong(LAST_MESSAGE_SEQ,0);
-        }
-        return lastMessageSeq;
+        return preferences.getLong(LAST_MESSAGE_SEQ,0);
     }
 
     @Override
     public void updateMessageSeq(long messageSeq) {
-        memoryStore.updateMessageSeq(messageSeq);
         preferences.edit().putLong(LAST_MESSAGE_SEQ,messageSeq).apply();
     }
 
     @Override
     public long increaseMessageSeq() {
-        long messageSeq = memoryStore.increaseMessageSeq();
-        preferences.edit().putLong(LAST_MESSAGE_SEQ,messageSeq).apply();
-        return messageSeq;
+        long seq = preferences.getLong(LAST_MESSAGE_SEQ,0);
+        preferences.edit().putLong(LAST_MESSAGE_SEQ,++seq).apply();
+        return seq;
     }
 
     @Override
     public void clearUnreadStatus(int conversationType, String target, int line) {
-        memoryStore.clearUnreadStatus(conversationType,target,line);
+        protoMessageDataStore.clearUnreadStatus(conversationType,target,line);
     }
 
     @Override
     public int getUnreadCount(String target) {
-        return memoryStore.getUnreadCount(target);
+        return protoMessageDataStore.getUnreadCount(target);
     }
 
     @Override
     public void createPrivateConversation(String target) {
-        memoryStore.createPrivateConversation(target);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public List<ProtoConversationInfo> getPrivateConversations() {
-        return memoryStore.getPrivateConversations();
+        return protoMessageDataStore.getPrivateConversations();
     }
 
     @Override
     public void createGroupConversation(String groupId) {
-        memoryStore.createGroupConversation(groupId);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public List<ProtoConversationInfo> getGroupConversations() {
-        return memoryStore.getGroupConversations();
+        return protoMessageDataStore.getGroupConversations();
     }
 
     @Override
     public ProtoConversationInfo getConversation(int conversationType, String target, int line) {
-        return memoryStore.getConversation(conversationType,target,line);
+        return protoMessageDataStore.getConversation(conversationType,target,line);
+    }
+
+    @Override
+    public ProtoConversationInfo[] getConversations(int[] conversationTypes, int[] lines) {
+        return new ProtoConversationInfo[0];
     }
 
     @Override

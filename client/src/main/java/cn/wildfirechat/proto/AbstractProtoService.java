@@ -256,9 +256,9 @@ public abstract class AbstractProtoService implements PushMessageCallback {
                         .action(new Runnable() {
                             @Override
                             public void run() {
-                                log.i("send message timeout");
                                 RequestInfo requestInfo = requestMap.remove(finalMessageId);
                                 if(requestInfo != null && requestInfo.getCallback() != null && protoMessageId != 0){
+                                    log.i("send message timeout");
                                     try {
                                         Method onFailure = requestInfo.getType().getMethod("onFailure",int.class);
                                         onFailure.invoke(requestInfo.getCallback(),ErrorCode.SERVICE_DIED);

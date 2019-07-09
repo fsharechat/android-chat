@@ -12,8 +12,9 @@ public class ChatStoreHelper extends SQLiteOpenHelper {
     private static final String TAG                 = ChatStoreHelper.class.getName();
     public static final String DATABASE_NAME       = "chat.db";
     public static final String TABLE_MESSAGES         = "messages";
-    private static final String queryDropTable =
-            "DROP TABLE IF EXISTS '" + TABLE_MESSAGES + "'";
+    public static final String TABLE_CONVERSATIONS = "conversations";
+    private static final String queryDropMessagesTable = "DROP TABLE IF EXISTS '" + TABLE_MESSAGES + "'";
+    private static final String queryDropConversationsTable = "DROP TABLE IF EXISTS '" + TABLE_CONVERSATIONS + "'";
     private static final String queryCreateMessagesTable = "CREATE TABLE IF NOT EXISTS 'messages' " +
             "(id INTEGER PRIMARY KEY," +
             " message_target TEXT," +
@@ -22,7 +23,15 @@ public class ChatStoreHelper extends SQLiteOpenHelper {
             " message_data BLOB, " +
             " date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
 
-    private static final int DATABASE_VERSION       = 1;
+    private static final String queryCreateConversationsTable = "CREATE TABLE IF NOT EXISTS 'conversations' " +
+            "(id INTEGER PRIMARY KEY," +
+            " conversation_type INT DEFAULT 0," +
+            " conversation_line INT DEFAULT 0," +
+            " conversation_target TEXT NOT NULL," +
+            " conversation_info BLOB, " +
+            " date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
+
+    private static final int DATABASE_VERSION       = 2;
 
     private static ChatStoreHelper sInstance;
 
@@ -44,13 +53,15 @@ public class ChatStoreHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(queryCreateMessagesTable);
+        db.execSQL(queryCreateConversationsTable);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         logger.i(TAG, "Upgrading database from version " + oldVersion + " to "
                 + newVersion + ". Destroying old data now..");
-        db.execSQL(queryDropTable);
+        db.execSQL(queryDropMessagesTable);
+        db.execSQL(queryDropConversationsTable);
         onCreate(db);
     }
 }

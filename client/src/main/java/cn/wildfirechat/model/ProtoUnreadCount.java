@@ -1,6 +1,8 @@
 package cn.wildfirechat.model;
 
-public class ProtoUnreadCount {
+import java.io.Serializable;
+
+public class ProtoUnreadCount implements Serializable {
     private int unread;
     private int unreadMention;
     private int unreadMentionAll;

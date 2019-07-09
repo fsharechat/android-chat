@@ -1,10 +1,12 @@
 package cn.wildfirechat.model;
 
+import java.io.Serializable;
+
 /**
  * Created by taoli on 2017/12/4.
  */
 
-public class ProtoConversationInfo {
+public class ProtoConversationInfo implements Serializable {
     private int conversationType;
     private String target;
     private int line;

@@ -47,6 +47,7 @@ import cn.wildfirechat.proto.handler.SearchUserResultMessageHandler;
 import cn.wildfirechat.proto.handler.SendMessageHandler;
 import cn.wildfirechat.proto.store.DataStoreFactory;
 import cn.wildfirechat.proto.store.ImMemoryStore;
+import cn.wildfirechat.proto.util.MessageShardingUtil;
 
 public class ProtoService extends AbstractProtoService {
 
@@ -204,7 +205,7 @@ public class ProtoService extends AbstractProtoService {
     }
 
     public ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser){
-        log.i("conversationType "+conversationType+" target "+target+" line "+line +" fromIndex "+fromIndex+" count "+count+" withuser "+withUser);
+        log.i("conversationType "+conversationType+" target "+target+" line "+line +" fromIndex "+fromIndex+" before "+before+" count "+count+" withuser "+withUser);
         ProtoMessage[] protoMessages = null;
         if(!TextUtils.isEmpty(target)){
             protoMessages = imMemoryStore.getMessages(conversationType,target,line,fromIndex,before,count,withUser);
@@ -252,7 +253,7 @@ public class ProtoService extends AbstractProtoService {
         String localMediaPath = msg.getContent().getLocalMediaPath();
         log.i("messageId "+msg.getMessageId()+" local media path "+localMediaPath+" mediaType "+msg.getContent().getMediaType());
         //注意这里的位置，不要随意调换有可能影响语音通话
-        long protoMessageId = System.currentTimeMillis();
+        long protoMessageId = MessageShardingUtil.generateId();
         msg.setMessageId(protoMessageId);
         msg.setStatus(MessageStatus.Sending.value());
         callback.onPrepared(protoMessageId,System.currentTimeMillis());

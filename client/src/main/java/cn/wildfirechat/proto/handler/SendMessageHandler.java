@@ -30,11 +30,10 @@ public class SendMessageHandler extends AbstractMessageHandler {
            long messageUid = byteBufferList.getLong();
            long timestamp = byteBufferList.getLong();
            ProtoService.log.i("messageUid "+messageUid+" timestamp "+timestamp);
-//           sendMessageCallback.onPrepared(messageId,timestamp);
-           sendMessageCallback.onSuccess(messageUid,timestamp);
            protoService.getImMemoryStore().updateMessageUid(requestInfo.getProtoMessageId(),messageUid);
            protoService.getImMemoryStore().updateMessageStatus(requestInfo.getProtoMessageId(), MessageStatus.Sent.ordinal());
            protoService.getImMemoryStore().increaseMessageSeq();
+           sendMessageCallback.onSuccess(messageUid,timestamp);
        } else {
            sendMessageCallback.onFailure(errorCode);
            protoService.getImMemoryStore().updateMessageStatus(requestInfo.getProtoMessageId(), MessageStatus.Send_Failure.ordinal());
