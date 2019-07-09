@@ -40,6 +40,7 @@ public class RecallNotifyMessageHandler extends AbstractMessageHandler{
                     MessagePayload payload = recallMessageContent.encode();
                     payload.contentType = recallMessageContent.getClass().getAnnotation(ContentTag.class).type();
                     updateProtoMessage.setContent(payload.toProtoContent());
+                    protoService.updateMessageContent(updateProtoMessage);
                     JavaProtoLogic.onRecallMessage(messageUid);
 
                 }

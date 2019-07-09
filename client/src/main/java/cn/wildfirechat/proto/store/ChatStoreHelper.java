@@ -18,8 +18,8 @@ public class ChatStoreHelper extends SQLiteOpenHelper {
     private static final String queryCreateMessagesTable = "CREATE TABLE IF NOT EXISTS 'messages' " +
             "(id INTEGER PRIMARY KEY," +
             " message_target TEXT," +
-            " message_id DOUBLE DEFAULT 0," +
-            " message_uid DOUBLE DEFAULT 0," +
+            " message_id INTEGER DEFAULT 0," +
+            " message_uid INTEGER DEFAULT 0," +
             " message_data BLOB, " +
             " date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
 
@@ -52,6 +52,7 @@ public class ChatStoreHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
+        logger.i("onzCreate sql messages and conversations");
         db.execSQL(queryCreateMessagesTable);
         db.execSQL(queryCreateConversationsTable);
     }

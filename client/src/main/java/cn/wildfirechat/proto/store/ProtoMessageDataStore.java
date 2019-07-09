@@ -242,12 +242,16 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
             query = query +" and "+COLUMN_MESSAGE_ID +" < "+fromIndex;
         }
         List<Map<String, Object>> messageList = queryMessageDatabase(query,"message_id DESC LIMIT " + count);
+        logger.i("getMessages target "+target+" messageList "+messageList);
         if(messageList != null){
             int num = messageList.size();
             List<ProtoMessage> protoMessages = new ArrayList<>();
             for(int i = num -1 ;i >= 0; i--){
                 Map<String,Object> objectMap = messageList.get(i);
-                protoMessages.add((ProtoMessage) objectMap.get(COLUMN_MESSAGE_DATA));
+                long messageId = (long) objectMap.get(COLUMN_MESSAGE_ID);
+                ProtoMessage protoMessage = (ProtoMessage) objectMap.get(COLUMN_MESSAGE_DATA);
+                //logger.i("proto messageId "+protoMessage.getMessageId()+" db messageId->"+messageId+" message status "+protoMessage.getStatus());
+                protoMessages.add(protoMessage);
             }
             ProtoMessage[] protoMessagesArr = new ProtoMessage[protoMessages.size()];
             return protoMessages.toArray(protoMessagesArr);
@@ -260,6 +264,7 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
     @Override
     public ProtoMessage getMessage(long messageId) {
         List<Map<String, Object>> res = queryMessageDatabase(COLUMN_MESSAGE_ID + "=" + messageId, null);
+        logger.i("getMessage messageId "+messageId+" res "+res);
         if (!res.isEmpty()) {
             Map<String,Object> protoMessageMap = res.get(0);
             ProtoMessage protoMessage = (ProtoMessage) protoMessageMap.get(COLUMN_MESSAGE_DATA);
@@ -290,11 +295,18 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
     public boolean updateMessageContent(ProtoMessage msg) {
         int retval = -1;
         if(isDatabaseOpen()){
-            ContentValues contentValues = new ContentValues(1);
-            contentValues.put(COLUMN_MESSAGE_DATA,serialize(msg));
-            retval = database.update(ChatStoreHelper.TABLE_MESSAGES,contentValues,COLUMN_MESSAGE_ID + "=" + msg.getMessageId(),null);
-            logger.i("update protomessageContent id "+msg.getMessageId());
-            createOrUpdateConversation(msg.getTarget(),msg.getConversationType(),msg);
+            List<Map<String,Object>> protoMessageMap = queryMessageDatabase(COLUMN_MESSAGE_ID + "=" + msg.getMessageId(),null);
+            if(protoMessageMap != null && protoMessageMap.size() ==1){
+                ProtoMessage updateProtoMessage = (ProtoMessage) protoMessageMap.get(0).get(COLUMN_MESSAGE_DATA);
+                updateProtoMessage.setContent(msg.getContent());
+
+                ContentValues contentValues = new ContentValues(1);
+                contentValues.put(COLUMN_MESSAGE_DATA,serialize(updateProtoMessage));
+                retval = database.update(ChatStoreHelper.TABLE_MESSAGES,contentValues,COLUMN_MESSAGE_ID + "=" + msg.getMessageId(),null);
+                logger.i("update protomessageContent id "+msg.getMessageId());
+                createOrUpdateConversation(updateProtoMessage.getTarget(),updateProtoMessage.getConversationType(),updateProtoMessage);
+            }
+
             return retval == 1;
         }
         return false;
@@ -320,6 +332,7 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
 
     @Override
     public boolean updateMessageUid(long protoMessageId, long messageUid) {
+        logger.i("updateMessageUid protoMessageId "+protoMessageId+" uid "+messageUid);
         int retval = -1;
         if(isDatabaseOpen()){
             ProtoMessage updateProtoMessage = getMessage(protoMessageId);
