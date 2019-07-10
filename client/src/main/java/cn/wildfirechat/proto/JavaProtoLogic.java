@@ -435,7 +435,9 @@ public class JavaProtoLogic {
 
     public static void setMediaMessagePlayed(long messageId){}
 
-    public static void removeConversation(int conversationType, String target, int line, boolean clearMsg){}
+    public static void removeConversation(int conversationType, String target, int line, boolean clearMsg){
+        protoService.getImMemoryStore().removeConversation(conversationType,target,line,clearMsg);
+    }
 
     public static void setConversationTop(int conversationType, String target, int line, boolean top){
         logger.i("setConversationTop "+conversationType+" target "+target+" top "+false);

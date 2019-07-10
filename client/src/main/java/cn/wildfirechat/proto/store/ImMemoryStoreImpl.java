@@ -4,7 +4,6 @@ import android.text.TextUtils;
 
 import com.comsince.github.logger.Log;
 import com.comsince.github.logger.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -13,8 +12,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
-
-import cn.wildfirechat.message.TextMessageContent;
 import cn.wildfirechat.message.core.MessageContentType;
 import cn.wildfirechat.model.Conversation;
 import cn.wildfirechat.model.ProtoConversationInfo;
@@ -29,7 +26,7 @@ import cn.wildfirechat.proto.ProtoConstants;
 import static cn.wildfirechat.remote.UserSettingScope.ConversationSilent;
 import static cn.wildfirechat.remote.UserSettingScope.ConversationTop;
 
-public class ImMemoryStoreImpl implements ImMemoryStore{
+public class ImMemoryStoreImpl extends DataStoreAdapter{
     Log logger = LoggerFactory.getLogger(ImMemoryStoreImpl.class);
     private List<String> friendList = Collections.synchronizedList(new ArrayList<>());
     private Map<String,List<ProtoMessage>> protoMessageMap = new ConcurrentHashMap<>();

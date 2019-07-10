@@ -405,6 +405,14 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
 
     }
 
+    @Override
+    public void removeConversation(int conversationType, String target, int line, boolean clearMsg) {
+        if(isDatabaseOpen()){
+            int delnum = database.delete(ChatStoreHelper.TABLE_CONVERSATIONS,COLUMN_CONVERSATION_TARGET +"="+"'"+target+"'"+" and "+COLUMN_CONVERSATION_TYPE+"="+conversationType,null);
+            logger.i("removeConversation target "+target+" conversation type "+conversationType+" deleted "+(delnum == 1));
+        }
+    }
+
     private ProtoConversationInfo createOrUpdateConversation(String target, int type, ProtoMessage lastProtoMessage){
         ProtoConversationInfo protoConversationInfo = newProtoConversation(target,type,lastProtoMessage);
         List<Map<String,Object>> conversation = queryConversation(COLUMN_CONVERSATION_TARGET +"="+"'"+target+"'"+" and "+COLUMN_CONVERSATION_TYPE+"="+type,null);

@@ -41,6 +41,7 @@ public interface ImMemoryStore {
     void clearUnreadStatus(int conversationType, String target, int line);
     int getUnreadCount(String target);
     void createPrivateConversation(String target);
+    void removeConversation(int conversationType, String target, int line, boolean clearMsg);
     List<ProtoConversationInfo> getPrivateConversations();
     void createGroupConversation(String groupId);
     List<ProtoConversationInfo> getGroupConversations();
