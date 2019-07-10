@@ -242,7 +242,6 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
             query = query +" and "+COLUMN_MESSAGE_ID +" < "+fromIndex;
         }
         List<Map<String, Object>> messageList = queryMessageDatabase(query,"message_id DESC LIMIT " + count);
-        logger.i("getMessages target "+target+" messageList "+messageList);
         if(messageList != null){
             int num = messageList.size();
             List<ProtoMessage> protoMessages = new ArrayList<>();
@@ -295,15 +294,13 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
     public boolean updateMessageContent(ProtoMessage msg) {
         int retval = -1;
         if(isDatabaseOpen()){
-            List<Map<String,Object>> protoMessageMap = queryMessageDatabase(COLUMN_MESSAGE_ID + "=" + msg.getMessageId(),null);
-            if(protoMessageMap != null && protoMessageMap.size() ==1){
-                ProtoMessage updateProtoMessage = (ProtoMessage) protoMessageMap.get(0).get(COLUMN_MESSAGE_DATA);
+            ProtoMessage updateProtoMessage = getMessage(msg.getMessageId());
+            if(updateProtoMessage != null){
                 updateProtoMessage.setContent(msg.getContent());
-
                 ContentValues contentValues = new ContentValues(1);
                 contentValues.put(COLUMN_MESSAGE_DATA,serialize(updateProtoMessage));
                 retval = database.update(ChatStoreHelper.TABLE_MESSAGES,contentValues,COLUMN_MESSAGE_ID + "=" + msg.getMessageId(),null);
-                logger.i("update protomessageContent id "+msg.getMessageId());
+                logger.i("update protomessage Content id "+msg.getMessageId());
                 createOrUpdateConversation(updateProtoMessage.getTarget(),updateProtoMessage.getConversationType(),updateProtoMessage);
             }
 
@@ -385,6 +382,17 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
     @Override
     public void clearUnreadStatus(int conversationType, String target, int line) {
         unReadCountMap.put(target,0);
+        ProtoConversationInfo protoConversationInfo  = getConversation(conversationType,target,line);
+        if(protoConversationInfo != null){
+            ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
+            protoUnreadCount.setUnread(0);
+            protoConversationInfo.setUnreadCount(protoUnreadCount);
+
+            ContentValues contentValues = new ContentValues(1);
+            contentValues.put(COLUMN_CONVERSATION_INFO,serialize(protoConversationInfo));
+            int updateNum = database.update(ChatStoreHelper.TABLE_CONVERSATIONS,contentValues,COLUMN_CONVERSATION_TARGET +"="+"'"+target+"'"+" and "+COLUMN_CONVERSATION_TYPE+"="+conversationType,null);
+            logger.i("clearUnreadStatus update conversation "+target+" type "+contentValues+" updated "+(updateNum == 1));
+        }
     }
 
     @Override
