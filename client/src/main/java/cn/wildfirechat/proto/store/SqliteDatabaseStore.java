@@ -9,13 +9,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.HashMap;
 
-abstract class SqliteDatabaseStore implements ImMemoryStore{
+abstract class SqliteDatabaseStore extends DataStoreAdapter{
 
     Log logger = LoggerFactory.getLogger(SqliteDatabaseStore.class);
     protected SQLiteDatabase database;
-    private ChatStoreHelper dbHelper;
+    protected ChatStoreHelper dbHelper;
+    private static final String DELETE_TABLE_MESSAGES = "delete from "+ChatStoreHelper.TABLE_MESSAGES;
+    private static final String DELETE_TABLE_CONVERSATIONS = "delete from "+ChatStoreHelper.TABLE_CONVERSATIONS;
 
 
     protected SqliteDatabaseStore(Context context){
@@ -68,5 +69,11 @@ abstract class SqliteDatabaseStore implements ImMemoryStore{
     }
 
 
-
+    @Override
+    public void stop() {
+        if(isDatabaseOpen()){
+            database.execSQL(DELETE_TABLE_CONVERSATIONS);
+            database.execSQL(DELETE_TABLE_MESSAGES);
+        }
+    }
 }

@@ -4,7 +4,6 @@ import android.content.Context;
 import com.comsince.github.logger.Log;
 import com.comsince.github.logger.LoggerFactory;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -443,7 +442,9 @@ public class JavaProtoLogic {
         logger.i("setConversationTop "+conversationType+" target "+target+" top "+false);
     }
 
-    public static void setConversationDraft(int conversationType, String target, int line, String draft){}
+    public static void setConversationDraft(int conversationType, String target, int line, String draft){
+        protoService.getImMemoryStore().setConversationDraft(conversationType,target,line,draft);
+    }
 
     public static void setConversationSilent(int conversationType, String target, int line, boolean silent){}
 

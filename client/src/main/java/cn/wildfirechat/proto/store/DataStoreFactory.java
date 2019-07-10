@@ -197,6 +197,11 @@ public class DataStoreFactory implements ImMemoryStore{
     }
 
     @Override
+    public void setConversationDraft(int conversationType, String target, int line, String draft) {
+        protoMessageDataStore.setConversationDraft(conversationType,target,line,draft);
+    }
+
+    @Override
     public List<ProtoConversationInfo> getPrivateConversations() {
         return protoMessageDataStore.getPrivateConversations();
     }
@@ -283,6 +288,8 @@ public class DataStoreFactory implements ImMemoryStore{
 
     @Override
     public void stop() {
+        preferences.edit().putLong(LAST_MESSAGE_SEQ,0).apply();
         memoryStore.stop();
+        protoMessageDataStore.stop();
     }
 }

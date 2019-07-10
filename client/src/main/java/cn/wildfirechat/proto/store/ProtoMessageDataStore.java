@@ -13,12 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import cn.wildfirechat.message.core.MessageContentType;
 import cn.wildfirechat.model.Conversation;
 import cn.wildfirechat.model.ProtoConversationInfo;
-import cn.wildfirechat.model.ProtoFriendRequest;
-import cn.wildfirechat.model.ProtoGroupInfo;
-import cn.wildfirechat.model.ProtoGroupMember;
 import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoUnreadCount;
-import cn.wildfirechat.model.ProtoUserInfo;
 import static cn.wildfirechat.remote.UserSettingScope.ConversationSilent;
 import static cn.wildfirechat.remote.UserSettingScope.ConversationTop;
 
@@ -150,61 +146,6 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
         else {
             return null;
         }
-    }
-
-    @Override
-    public List<String> getFriendList() {
-        return null;
-    }
-
-    @Override
-    public String[] getFriendListArr() {
-        return new String[0];
-    }
-
-    @Override
-    public void setFriendArr(String[] friendArr, boolean refresh) {
-
-    }
-
-    @Override
-    public void setFriendArr(String[] friendArr) {
-
-    }
-
-    @Override
-    public boolean hasFriend() {
-        return false;
-    }
-
-    @Override
-    public boolean isMyFriend(String userId) {
-        return false;
-    }
-
-    @Override
-    public long getFriendRequestHead() {
-        return 0;
-    }
-
-    @Override
-    public void setFriendRequestHead(long friendRequestHead) {
-
-    }
-
-    @Override
-    public ProtoFriendRequest[] getIncomingFriendRequest() {
-        return new ProtoFriendRequest[0];
-    }
-
-    @Override
-    public void clearProtoFriendRequest() {
-
-    }
-
-    @Override
-    public void addProtoFriendRequest(ProtoFriendRequest protoFriendRequest) {
-
     }
 
     @Override
@@ -360,26 +301,6 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
     }
 
     @Override
-    public long getTargetLastMessageId(String targetId) {
-        return 0;
-    }
-
-    @Override
-    public long getLastMessageSeq() {
-        return 0;
-    }
-
-    @Override
-    public void updateMessageSeq(long messageSeq) {
-
-    }
-
-    @Override
-    public long increaseMessageSeq() {
-        return 0;
-    }
-
-    @Override
     public void clearUnreadStatus(int conversationType, String target, int line) {
         unReadCountMap.put(target,0);
         ProtoConversationInfo protoConversationInfo  = getConversation(conversationType,target,line);
@@ -387,22 +308,13 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
             ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
             protoUnreadCount.setUnread(0);
             protoConversationInfo.setUnreadCount(protoUnreadCount);
-
-            ContentValues contentValues = new ContentValues(1);
-            contentValues.put(COLUMN_CONVERSATION_INFO,serialize(protoConversationInfo));
-            int updateNum = database.update(ChatStoreHelper.TABLE_CONVERSATIONS,contentValues,COLUMN_CONVERSATION_TARGET +"="+"'"+target+"'"+" and "+COLUMN_CONVERSATION_TYPE+"="+conversationType,null);
-            logger.i("clearUnreadStatus update conversation "+target+" type "+contentValues+" updated "+(updateNum == 1));
+            updateConversation(conversationType,target,line,protoConversationInfo);
         }
     }
 
     @Override
     public int getUnreadCount(String target) {
         return unReadCountMap.get(target) == null ? 0 : unReadCountMap.get(target);
-    }
-
-    @Override
-    public void createPrivateConversation(String target) {
-
     }
 
     @Override
@@ -413,6 +325,15 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
         }
     }
 
+    @Override
+    public void setConversationDraft(int conversationType, String target, int line, String draft) {
+        ProtoConversationInfo protoConversationInfo = getConversation(conversationType,target,line);
+        if(protoConversationInfo != null){
+            protoConversationInfo.setDraft(draft);
+            updateConversation(conversationType,target,line,protoConversationInfo);
+        }
+    }
+
     private ProtoConversationInfo createOrUpdateConversation(String target, int type, ProtoMessage lastProtoMessage){
         ProtoConversationInfo protoConversationInfo = newProtoConversation(target,type,lastProtoMessage);
         List<Map<String,Object>> conversation = queryConversation(COLUMN_CONVERSATION_TARGET +"="+"'"+target+"'"+" and "+COLUMN_CONVERSATION_TYPE+"="+type,null);
@@ -420,14 +341,19 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
             protoConversationInfo = (ProtoConversationInfo) conversation.get(0).get(COLUMN_CONVERSATION_INFO);
             protoConversationInfo.setLastMessage(lastProtoMessage);
             setUnReadCount(protoConversationInfo);
-            ContentValues contentValues = new ContentValues(1);
-            contentValues.put(COLUMN_CONVERSATION_INFO,serialize(protoConversationInfo));
-            int updateNum = database.update(ChatStoreHelper.TABLE_CONVERSATIONS,contentValues,COLUMN_CONVERSATION_TARGET +"="+"'"+target+"'"+" and "+COLUMN_CONVERSATION_TYPE+"="+type,null);
-            logger.i("update conversation "+target+" type "+type+" updated "+(updateNum == 1));
+            updateConversation(type,target,0,protoConversationInfo);
         } else {
             insertConversations(target,type,0,protoConversationInfo);
         }
         return protoConversationInfo;
+    }
+
+    private boolean updateConversation(int conversationType, String target, int line, ProtoConversationInfo protoConversationInfo){
+        ContentValues contentValues = new ContentValues(1);
+        contentValues.put(COLUMN_CONVERSATION_INFO,serialize(protoConversationInfo));
+        int updateNum = database.update(ChatStoreHelper.TABLE_CONVERSATIONS,contentValues,COLUMN_CONVERSATION_TARGET +"="+"'"+target+"'"+" and "+COLUMN_CONVERSATION_TYPE+"="+conversationType,null);
+        logger.i("update conversation "+target+" type "+conversationType+" line "+line+" updated "+(updateNum == 1));
+        return updateNum == 1;
     }
 
     private ProtoConversationInfo newProtoConversation(String target, int type, ProtoMessage lastProtoMessage){
@@ -472,11 +398,6 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
     }
 
     @Override
-    public void createGroupConversation(String groupId) {
-
-    }
-
-    @Override
     public List<ProtoConversationInfo> getGroupConversations() {
         logger.i("getGroupConversations");
         List<Map<String,Object>> groupConversations = queryConversation(COLUMN_CONVERSATION_TYPE +"="+ Conversation.ConversationType.Group.ordinal(),null);
@@ -508,51 +429,6 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
     }
 
     @Override
-    public ProtoGroupInfo getGroupInfo(String groupId) {
-        return null;
-    }
-
-    @Override
-    public void addGroupInfo(String groupId, ProtoGroupInfo protoGroupInfo, boolean refresh) {
-
-    }
-
-    @Override
-    public ProtoGroupMember[] getGroupMembers(String groupId) {
-        return new ProtoGroupMember[0];
-    }
-
-    @Override
-    public void addGroupMember(String groupId, ProtoGroupMember protoGroupMember) {
-
-    }
-
-    @Override
-    public void addGroupMember(String groupId, ProtoGroupMember[] protoGroupMembers) {
-
-    }
-
-    @Override
-    public ProtoGroupMember getGroupMember(String groupId, String memberId) {
-        return null;
-    }
-
-    @Override
-    public ProtoUserInfo getUserInfo(String userId) {
-        return null;
-    }
-
-    @Override
-    public ProtoUserInfo[] getUserInfos(String[] userIds) {
-        return new ProtoUserInfo[0];
-    }
-
-    @Override
-    public void addUserInfo(ProtoUserInfo protoUserInfos) {
-
-    }
-
-    @Override
     public void setUserSetting(int scope, String key, String value) {
         Map<String,String> scopeMap = userSettingMap.get(scope);
         if(scopeMap == null){
@@ -571,10 +447,7 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
             } else if(scope == ConversationSilent){
                 updateProtoConversation.setSilent(value.equals("1") ? true : false);
             }
-            ContentValues contentValues = new ContentValues(1);
-            contentValues.put(COLUMN_CONVERSATION_INFO,serialize(updateProtoConversation));
-            int updateNum = database.update(ChatStoreHelper.TABLE_CONVERSATIONS,contentValues,COLUMN_CONVERSATION_TARGET +"="+"'"+target+"'"+" and "+COLUMN_CONVERSATION_TYPE+"="+conversationType,null);
-            logger.i("setUserSetting update conversation "+target+" type "+conversationType+" updated "+(updateNum == 1));
+            updateConversation(conversationType,target,0,updateProtoConversation);
         }
     }
 
@@ -590,10 +463,5 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
     @Override
     public Map<String, String> getUserSettings(int scope) {
         return userSettingMap.get(scope);
-    }
-
-    @Override
-    public void stop() {
-
     }
 }

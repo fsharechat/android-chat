@@ -162,6 +162,11 @@ public class DataStoreAdapter implements ImMemoryStore{
     }
 
     @Override
+    public void setConversationDraft(int conversationType, String target, int line, String draft) {
+
+    }
+
+    @Override
     public List<ProtoConversationInfo> getPrivateConversations() {
         return null;
     }
