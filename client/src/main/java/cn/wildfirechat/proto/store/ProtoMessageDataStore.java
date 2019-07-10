@@ -409,6 +409,9 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
         ProtoConversationInfo protoConversationInfo = newProtoConversation(target,type,lastProtoMessage);
         List<Map<String,Object>> conversation = queryConversation(COLUMN_CONVERSATION_TARGET +"="+"'"+target+"'"+" and "+COLUMN_CONVERSATION_TYPE+"="+type,null);
         if(conversation != null && conversation.size() == 1){
+            protoConversationInfo = (ProtoConversationInfo) conversation.get(0).get(COLUMN_CONVERSATION_INFO);
+            protoConversationInfo.setLastMessage(lastProtoMessage);
+            setUnReadCount(protoConversationInfo);
             ContentValues contentValues = new ContentValues(1);
             contentValues.put(COLUMN_CONVERSATION_INFO,serialize(protoConversationInfo));
             int updateNum = database.update(ChatStoreHelper.TABLE_CONVERSATIONS,contentValues,COLUMN_CONVERSATION_TARGET +"="+"'"+target+"'"+" and "+COLUMN_CONVERSATION_TYPE+"="+type,null);
@@ -427,11 +430,15 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
         protoConversationInfo.setTop(conversationSetting(ConversationTop,type,target));
         protoConversationInfo.setSilent(conversationSetting(ConversationSilent,type,target));
         protoConversationInfo.setLastMessage(lastProtoMessage);
-        ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
-        protoUnreadCount.setUnread(getUnreadCount(target));
-        protoConversationInfo.setUnreadCount(protoUnreadCount);
+        setUnReadCount(protoConversationInfo);
         protoConversationInfo.setTimestamp(System.currentTimeMillis());
         return protoConversationInfo;
+    }
+
+    private void setUnReadCount(ProtoConversationInfo protoConversationInfo){
+        ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
+        protoUnreadCount.setUnread(getUnreadCount(protoConversationInfo.getTarget()));
+        protoConversationInfo.setUnreadCount(protoUnreadCount);
     }
 
     private boolean conversationSetting(int scope,int conversationType,String target){
@@ -545,6 +552,22 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
         }
         scopeMap.put(key,value);
         userSettingMap.put(scope,scopeMap);
+        if(!TextUtils.isEmpty(key)){
+            String[] keys = key.split("-");
+            int conversationType = Integer.parseInt(keys[0]);
+            int line = Integer.parseInt(keys[1]);
+            String target = keys[2];
+            ProtoConversationInfo updateProtoConversation = getConversation(conversationType,target,line);
+            if(scope == ConversationTop){
+                updateProtoConversation.setTop(value.equals("1") ? true : false);
+            } else if(scope == ConversationSilent){
+                updateProtoConversation.setSilent(value.equals("1") ? true : false);
+            }
+            ContentValues contentValues = new ContentValues(1);
+            contentValues.put(COLUMN_CONVERSATION_INFO,serialize(updateProtoConversation));
+            int updateNum = database.update(ChatStoreHelper.TABLE_CONVERSATIONS,contentValues,COLUMN_CONVERSATION_TARGET +"="+"'"+target+"'"+" and "+COLUMN_CONVERSATION_TYPE+"="+conversationType,null);
+            logger.i("setUserSetting update conversation "+target+" type "+conversationType+" updated "+(updateNum == 1));
+        }
     }
 
     @Override

@@ -263,17 +263,17 @@ public class DataStoreFactory implements ImMemoryStore{
 
     @Override
     public void setUserSetting(int scope, String key, String value) {
-         memoryStore.setUserSetting(scope,key,value);
+         protoMessageDataStore.setUserSetting(scope,key,value);
     }
 
     @Override
     public String getUserSetting(int scope, String key) {
-        return memoryStore.getUserSetting(scope,key);
+        return protoMessageDataStore.getUserSetting(scope,key);
     }
 
     @Override
     public Map<String, String> getUserSettings(int scope) {
-        return memoryStore.getUserSettings(scope);
+        return protoMessageDataStore.getUserSettings(scope);
     }
 
     @Override
