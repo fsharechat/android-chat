@@ -25,7 +25,7 @@ public abstract class AbstractMessageHandler implements MessageHandler{
 
     ProtoService protoService;
 
-    public Executor workExecutor = Executors.newFixedThreadPool(3);
+    public Executor workExecutor = Executors.newFixedThreadPool(1);
 
     protected Object getCallback(int messageId){
         return protoService.requestMap.remove(messageId).getCallback();

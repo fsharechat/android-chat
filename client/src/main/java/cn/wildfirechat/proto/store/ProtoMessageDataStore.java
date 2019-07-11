@@ -150,6 +150,7 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
 
     @Override
     public void addProtoMessageByTarget(String target, ProtoMessage protoMessage, boolean isPush) {
+        logger.i("add target "+target+" contentType "+protoMessage.getContent().getType());
         insertProtoMessage(target,protoMessage);
         if(isPush){
             //设置未读消息
@@ -200,7 +201,7 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
                 Map<String,Object> objectMap = messageList.get(i);
                 long messageId = (long) objectMap.get(COLUMN_MESSAGE_ID);
                 ProtoMessage protoMessage = (ProtoMessage) objectMap.get(COLUMN_MESSAGE_DATA);
-                //logger.i("proto messageId "+protoMessage.getMessageId()+" db messageId->"+messageId+" message status "+protoMessage.getStatus());
+                logger.i("proto messageId "+protoMessage.getMessageId()+" db messageId->"+messageId+" message status "+protoMessage.getStatus()+" contentType "+protoMessage.getContent().getType());
                 protoMessages.add(protoMessage);
             }
             ProtoMessage[] protoMessagesArr = new ProtoMessage[protoMessages.size()];
@@ -424,13 +425,15 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
     @Override
     public ProtoConversationInfo getConversation(int conversationType, String target, int line) {
         logger.i("getConversation type "+conversationType+" target "+target);
-        ProtoConversationInfo protoConversationInfo = null;
-        List<Map<String,Object>> conversation = queryConversation(COLUMN_CONVERSATION_TARGET +"="+"'"+target+"'"+" and "+COLUMN_CONVERSATION_TYPE+"="+conversationType,null);
-        if(conversation != null && conversation.size() == 1){
-            protoConversationInfo = (ProtoConversationInfo) conversation.get(0).get(COLUMN_CONVERSATION_INFO);
-        } else {
-            protoConversationInfo = newProtoConversation(target,conversationType,null);
-            insertConversations(target,conversationType,0,protoConversationInfo);
+        ProtoConversationInfo protoConversationInfo = new ProtoConversationInfo();
+        if(!TextUtils.isEmpty(target)){
+            List<Map<String,Object>> conversation = queryConversation(COLUMN_CONVERSATION_TARGET +"="+"'"+target+"'"+" and "+COLUMN_CONVERSATION_TYPE+"="+conversationType,null);
+            if(conversation != null && conversation.size() == 1){
+                protoConversationInfo = (ProtoConversationInfo) conversation.get(0).get(COLUMN_CONVERSATION_INFO);
+            } else {
+                protoConversationInfo = newProtoConversation(target,conversationType,null);
+                insertConversations(target,conversationType,0,protoConversationInfo);
+            }
         }
         return protoConversationInfo;
     }

@@ -46,28 +46,17 @@ public class ReceiveMessageHandler extends AbstractMessageHandler {
                         logger.i("message count "+pullMessageResult.getMessageCount()+" head "+head);
                         protoService.getImMemoryStore().updateMessageSeq(head);
                         List<ProtoMessage> resultProtoMessageList = new ArrayList<>();
-                        Map<String,List<ProtoMessage>> targetProtoMessageMap = new HashMap<>();
+                        boolean isPush = protoService.futureMap.get(header.getMessageId()) == null;
                         for(WFCMessage.Message wfcMessage : pullMessageResult.getMessageList()){
                             logger.i("messageType "+wfcMessage.getContent().getType());
                             ProtoMessage protoMessage = protoService.convertProtoMessage(wfcMessage);
-                            if(!TextUtils.isEmpty(protoMessage.getTarget())){
-                                if(canPersistent(protoMessage.getContent().getType())){
-                                    List<ProtoMessage> protoMessages = targetProtoMessageMap.get(protoMessage.getTarget());
-                                    if(protoMessages == null){
-                                        protoMessages = new ArrayList<>();
-                                    }
-                                    protoMessages.add(protoMessage);
-                                    targetProtoMessageMap.put(protoMessage.getTarget(),protoMessages);
-                                }
+                            //为什么要去重，因为语音通话消息信令发送频繁，容易出现消息重复，可能影响通话流程
+                            //这里的消息最好在一个线程里面进行，不然插入数据还没生效，可能出现幻读，否则会出现信令重复，可能出现意想不到的结果
+                            ProtoMessage existProtoMessage = protoService.getImMemoryStore().getMessage(protoMessage.getMessageId());
+                            if(existProtoMessage == null) {
+                                resultProtoMessageList.add(protoMessage);
+                                protoService.getImMemoryStore().addProtoMessageByTarget(protoMessage.getTarget(),protoMessage,isPush);
                             }
-                        }
-                        boolean isPush = protoService.futureMap.get(header.getMessageId()) == null;
-                        for(Map.Entry<String,List<ProtoMessage>> entry : targetProtoMessageMap.entrySet()){
-                            String target = entry.getKey();
-                            List<ProtoMessage> protoMessageList = entry.getValue();
-                            logger.i("target "+target+" size "+protoMessageList.size());
-                            protoService.getImMemoryStore().addProtoMessagesByTarget(target,protoMessageList,isPush);
-                            resultProtoMessageList.addAll(protoMessageList);
                         }
                         ProtoMessage[] protoMessagesArr = new ProtoMessage[resultProtoMessageList.size()];
                         resultProtoMessageList.toArray(protoMessagesArr);
