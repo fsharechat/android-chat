@@ -381,7 +381,9 @@ public class JavaProtoLogic {
 //    }
 
     public static  ProtoConversationInfo getConversation(int conversationType, String target, int line){
-        return protoService.getImMemoryStore().getConversation(conversationType,target,line);
+        ProtoConversationInfo protoConversationInfo = protoService.getImMemoryStore().getConversation(conversationType,target,line);
+        protoConversationInfo.setTimestamp(System.currentTimeMillis());
+        return protoConversationInfo;
 //        int[] conversationTypes = new int[1];
 //        int[] lines = new int[1];
 //        conversationTypes[0] = conversationType;
