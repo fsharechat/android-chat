@@ -24,6 +24,7 @@ public interface ImMemoryStore {
     void clearProtoFriendRequest();
     void addProtoFriendRequest(ProtoFriendRequest protoFriendRequest);
     void addProtoMessageByTarget(String target, ProtoMessage protoMessage, boolean isPush);
+    void addProtoMessagesByTarget(String target, List<ProtoMessage> protoMessages, boolean isPush);
     ProtoMessage[] getMessages(int conversationType, String target);
     ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser);
     ProtoMessage getMessage(long messageId);

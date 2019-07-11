@@ -150,25 +150,35 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
 
     @Override
     public void addProtoMessageByTarget(String target, ProtoMessage protoMessage, boolean isPush) {
-        if(protoMessage.getContent().getType() != MessageContentType.ContentType_Typing){
-            if((!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
-                    || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent()))
-                    || protoMessage.getContent().getBinaryContent() != null){
+        insertProtoMessage(target,protoMessage);
+        if(isPush){
+            //设置未读消息
+            int unReadCount = 0;
+            if(unReadCountMap.get(protoMessage.getTarget()) != null){
+                unReadCount = unReadCountMap.get(protoMessage.getTarget());
+            }
+            unReadCountMap.put(protoMessage.getTarget(),++unReadCount);
+        }
 
-                insertProtoMessage(target,protoMessage);
+        createOrUpdateConversation(target,protoMessage.getConversationType(),protoMessage);
+    }
 
-                if(isPush && protoMessage.getContent().getType() <= 400){
-                    //设置未读消息
-                    int unReadCount = 0;
-                    if(unReadCountMap.get(protoMessage.getTarget()) != null){
-                        unReadCount = unReadCountMap.get(protoMessage.getTarget());
-                    }
-                    unReadCountMap.put(protoMessage.getTarget(),++unReadCount);
+    @Override
+    public void addProtoMessagesByTarget(String target, List<ProtoMessage> protoMessages, boolean isPush) {
+        for(ProtoMessage protoMessage : protoMessages){
+            logger.i("add protomessage target "+protoMessage.getTarget()+" messageId "+protoMessage.getMessageId());
+            insertProtoMessage(target,protoMessage);
+            if(isPush){
+                //设置未读消息
+                int unReadCount = 0;
+                if(unReadCountMap.get(protoMessage.getTarget()) != null){
+                    unReadCount = unReadCountMap.get(protoMessage.getTarget());
                 }
-
-                createOrUpdateConversation(target,protoMessage.getConversationType(),protoMessage);
+                unReadCountMap.put(protoMessage.getTarget(),++unReadCount);
             }
         }
+        ProtoMessage lastProtoMessage = protoMessages.get(protoMessages.size() -1);
+        createOrUpdateConversation(target,lastProtoMessage.getConversationType(),lastProtoMessage);
     }
 
     @Override
@@ -194,6 +204,7 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
                 protoMessages.add(protoMessage);
             }
             ProtoMessage[] protoMessagesArr = new ProtoMessage[protoMessages.size()];
+            logger.i("target "+target+" from messageId "+fromIndex+" size "+protoMessages.size());
             return protoMessages.toArray(protoMessagesArr);
         } else {
             return null;
@@ -228,7 +239,7 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
 
     @Override
     public ProtoMessage[] filterProMessage(ProtoMessage[] protoMessages) {
-        return new ProtoMessage[0];
+        return protoMessages;
     }
 
     @Override

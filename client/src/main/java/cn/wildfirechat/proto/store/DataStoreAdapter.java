@@ -72,6 +72,11 @@ public class DataStoreAdapter implements ImMemoryStore{
     }
 
     @Override
+    public void addProtoMessagesByTarget(String target, List<ProtoMessage> protoMessages, boolean isPush) {
+
+    }
+
+    @Override
     public ProtoMessage[] getMessages(int conversationType, String target) {
         return new ProtoMessage[0];
     }

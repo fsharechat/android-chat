@@ -43,6 +43,7 @@ import cn.wildfirechat.proto.handler.QuitGroupHandler;
 import cn.wildfirechat.proto.handler.RecallMessageHandler;
 import cn.wildfirechat.proto.handler.RecallNotifyMessageHandler;
 import cn.wildfirechat.proto.handler.ReceiveMessageHandler;
+import cn.wildfirechat.proto.handler.RemoteMessageHandler;
 import cn.wildfirechat.proto.handler.SearchUserResultMessageHandler;
 import cn.wildfirechat.proto.handler.SendMessageHandler;
 import cn.wildfirechat.proto.store.DataStoreFactory;
@@ -86,6 +87,7 @@ public class ProtoService extends AbstractProtoService {
         messageHandlers.add(new QiniuTokenHandler(this));
         messageHandlers.add(new RecallMessageHandler(this));
         messageHandlers.add(new RecallNotifyMessageHandler(this));
+        messageHandlers.add(new RemoteMessageHandler(this));
     }
 
     public void searchUser(String keyword, JavaProtoLogic.ISearchUserCallback callback){
@@ -210,24 +212,6 @@ public class ProtoService extends AbstractProtoService {
         if(!TextUtils.isEmpty(target)){
             protoMessages = imMemoryStore.getMessages(conversationType,target,line,fromIndex,before,count,withUser);
         }
-
-//        if(protoMessages == null){
-//            long targetLastMessageId = imMemoryStore.getTargetLastMessageId(target);
-//            log.i("targetLastMessageId "+targetLastMessageId);
-//            WFCMessage.PullMessageRequest pullMessageRequest = WFCMessage.PullMessageRequest.newBuilder()
-//                    .setId(targetLastMessageId)
-//                    .setType(conversationType)
-//                    .build();
-//            SimpleFuture<ProtoMessage[]> pullMessageFuture = sendMessageSync(Signal.PUBLISH,SubSignal.MP,pullMessageRequest.toByteArray());
-//            try {
-//                pullMessageFuture.get(500,TimeUnit.MILLISECONDS);
-//                if(!TextUtils.isEmpty(target)){
-//                    protoMessages = imMemoryStore.getMessages(conversationType,target);
-//                }
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//        }
         return protoMessages;
     }
 
@@ -244,7 +228,15 @@ public class ProtoService extends AbstractProtoService {
     }
 
     public void getRemoteMessages(int conversationType, String target, int line, long beforeMessageUid, int count, JavaProtoLogic.ILoadRemoteMessagesCallback callback){
-        callback.onSuccess(new ProtoMessage[0]);
+        WFCMessage.LoadRemoteMessages.Builder loadRemoteMessagesBuilder = WFCMessage.LoadRemoteMessages.newBuilder();
+        loadRemoteMessagesBuilder.setBeforeUid(beforeMessageUid);
+        loadRemoteMessagesBuilder.setCount(count);
+        WFCMessage.Conversation.Builder conversationBuilder = WFCMessage.Conversation.newBuilder();
+        conversationBuilder.setLine(line);
+        conversationBuilder.setTarget(target);
+        conversationBuilder.setType(conversationType);
+        loadRemoteMessagesBuilder.setConversation(conversationBuilder.build());
+        sendMessage(Signal.PUBLISH,SubSignal.LRM,loadRemoteMessagesBuilder.build().toByteArray(),callback);
     }
 
     public void sendMessage(ProtoMessage msg, int expireDuration, JavaProtoLogic.ISendMessageCallback callback){

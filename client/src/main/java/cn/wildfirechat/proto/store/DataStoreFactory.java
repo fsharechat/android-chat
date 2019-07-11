@@ -3,14 +3,11 @@ package cn.wildfirechat.proto.store;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import android.text.TextUtils;
-
 import com.comsince.github.logger.Log;
 import com.comsince.github.logger.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-import cn.wildfirechat.message.core.MessageContentType;
 import cn.wildfirechat.model.ProtoConversationInfo;
 import cn.wildfirechat.model.ProtoFriendRequest;
 import cn.wildfirechat.model.ProtoGroupInfo;
@@ -101,17 +98,18 @@ public class DataStoreFactory implements ImMemoryStore{
     }
 
     @Override
+    public void addProtoMessagesByTarget(String target, List<ProtoMessage> protoMessages, boolean isPush) {
+        protoMessageDataStore.addProtoMessagesByTarget(target,protoMessages,isPush);
+    }
+
+    @Override
     public ProtoMessage[] getMessages(int conversationType, String target) {
         return getMessages(conversationType,target,0,0,false,20,null);
     }
 
     @Override
     public ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser) {
-        ProtoMessage[] protoMessages = protoMessageDataStore.getMessages(conversationType,target,line,fromIndex,before,count,withUser);
-        if(protoMessages != null){
-            return filterProMessage(protoMessages);
-        }
-        return null;
+        return protoMessageDataStore.getMessages(conversationType,target,line,fromIndex,before,count,withUser);
     }
 
     @Override

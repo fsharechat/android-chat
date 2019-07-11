@@ -10,7 +10,9 @@ import com.comsince.github.push.SubSignal;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import cn.wildfirechat.message.core.MessageContentType;
 import cn.wildfirechat.model.ProtoMessage;
@@ -33,38 +35,50 @@ public class ReceiveMessageHandler extends AbstractMessageHandler {
     @Override
     public void processMessage(Header header, ByteBufferList byteBufferList) {
         int errorCode = byteBufferList.get();
-        ProtoService.log.i("receive message code "+errorCode +" remain "+" body count "+header.getLength()+" "+byteBufferList.remaining());
+        logger.i("receive message code "+errorCode +" remain "+" body count "+header.getLength()+" "+byteBufferList.remaining());
         if(errorCode == 0){
             try {
                 WFCMessage.PullMessageResult pullMessageResult = WFCMessage.PullMessageResult.parseFrom(byteBufferList.getAllByteArray());
-                long head = pullMessageResult.getHead();
-                ProtoService.log.i("message count "+pullMessageResult.getMessageCount()+" head "+head);
-                protoService.getImMemoryStore().updateMessageSeq(head);
-                List<ProtoMessage> protoMessageList = new ArrayList<>();
-                for(int i = 0 ;i<pullMessageResult.getMessageCount();i++){
-                    logger.i("messsageType "+pullMessageResult.getMessage(i).getContent().getType());
-                    ProtoMessage protoMessage = protoService.convertProtoMessage(pullMessageResult.getMessage(i));
-                    if(!TextUtils.isEmpty(protoMessage.getTarget())){
-                        ProtoMessage existProtoMessage = protoService.getImMemoryStore().getMessage(protoMessage.getMessageId());
-                        if(existProtoMessage == null){
-                            protoMessageList.add(protoMessage);
-                            protoService.getImMemoryStore().addProtoMessageByTarget(protoMessage.getTarget(),protoMessage,protoService.futureMap.get(header.getMessageId()) == null);
+                workExecutor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        long head = pullMessageResult.getHead();
+                        logger.i("message count "+pullMessageResult.getMessageCount()+" head "+head);
+                        protoService.getImMemoryStore().updateMessageSeq(head);
+                        List<ProtoMessage> resultProtoMessageList = new ArrayList<>();
+                        Map<String,List<ProtoMessage>> targetProtoMessageMap = new HashMap<>();
+                        for(WFCMessage.Message wfcMessage : pullMessageResult.getMessageList()){
+                            logger.i("messageType "+wfcMessage.getContent().getType());
+                            ProtoMessage protoMessage = protoService.convertProtoMessage(wfcMessage);
+                            if(!TextUtils.isEmpty(protoMessage.getTarget())){
+                                if(canPersistent(protoMessage.getContent().getType())){
+                                    List<ProtoMessage> protoMessages = targetProtoMessageMap.get(protoMessage.getTarget());
+                                    if(protoMessages == null){
+                                        protoMessages = new ArrayList<>();
+                                    }
+                                    protoMessages.add(protoMessage);
+                                    targetProtoMessageMap.put(protoMessage.getTarget(),protoMessages);
+                                }
+                            }
+                        }
+                        boolean isPush = protoService.futureMap.get(header.getMessageId()) == null;
+                        for(Map.Entry<String,List<ProtoMessage>> entry : targetProtoMessageMap.entrySet()){
+                            String target = entry.getKey();
+                            List<ProtoMessage> protoMessageList = entry.getValue();
+                            logger.i("target "+target+" size "+protoMessageList.size());
+                            protoService.getImMemoryStore().addProtoMessagesByTarget(target,protoMessageList,isPush);
+                            resultProtoMessageList.addAll(protoMessageList);
+                        }
+                        ProtoMessage[] protoMessagesArr = new ProtoMessage[resultProtoMessageList.size()];
+                        resultProtoMessageList.toArray(protoMessagesArr);
+                        SimpleFuture<ProtoMessage[]> pullMessageFuture = protoService.futureMap.remove(header.getMessageId());
+                        if(!isPush){
+                            pullMessageFuture.setComplete(protoMessagesArr);
+                        } else {
+                            JavaProtoLogic.onReceiveMessage(protoMessagesArr,false);
                         }
                     }
-                }
-                ProtoMessage[] protoMessages = new ProtoMessage[protoMessageList.size()];
-                protoMessageList.toArray(protoMessages);
-                SimpleFuture<ProtoMessage[]> pullMessageFutrue = protoService.futureMap.remove(header.getMessageId());
-                if(pullMessageFutrue != null){
-                    pullMessageFutrue.setComplete(protoMessages);
-                } else {
-                    workExecutor.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            JavaProtoLogic.onReceiveMessage(protoMessages,false);
-                        }
-                    });
-                }
+                });
             } catch (InvalidProtocolBufferException e) {
                 e.printStackTrace();
             }
