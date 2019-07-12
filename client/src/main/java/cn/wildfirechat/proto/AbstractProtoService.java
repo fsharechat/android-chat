@@ -52,6 +52,12 @@ import cn.wildfirechat.proto.store.ImMemoryStore;
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusConnected;
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusConnecting;
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusUnconnected;
+import static cn.wildfirechat.message.core.MessageContentType.ContentType_Call_Accept;
+import static cn.wildfirechat.message.core.MessageContentType.ContentType_Call_Accept_T;
+import static cn.wildfirechat.message.core.MessageContentType.ContentType_Call_End;
+import static cn.wildfirechat.message.core.MessageContentType.ContentType_Call_Modify;
+import static cn.wildfirechat.message.core.MessageContentType.ContentType_Call_Signal;
+import static cn.wildfirechat.message.core.MessageContentType.ContentType_Typing;
 
 public abstract class AbstractProtoService implements PushMessageCallback {
     public static Log log = LoggerFactory.getLogger(ProtoService.class);
@@ -395,7 +401,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
 
     public ProtoMessage convertProtoMessage(WFCMessage.Message message){
         ProtoMessage messageResponse = new ProtoMessage();
-        log.i("current user "+userName +" fromuser "+message.getFromUser()+" target "+message.getToUser() +"message "+message.getContent().getSearchableContent()
+        log.i("receive current user "+userName +" fromuser "+message.getFromUser()+" target "+message.getToUser() +"message "+message.getContent().getSearchableContent()
         +"media type "+message.getContent().getMediaType()+" remote url "+message.getContent().getRemoteMediaUrl()
         +" messageId "+message.getMessageId()+" contentType "+message.getContent().getType()+" content "+message.getContent().getContent());
         if(message.getFromUser().equals(userName)){
@@ -444,7 +450,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
 
     public WFCMessage.Message convertWFCMessage(ProtoMessage messageResponse){
         WFCMessage.Message.Builder builder = WFCMessage.Message.newBuilder();
-        log.i("fromuser "+messageResponse.getFrom()+" target "+messageResponse.getTarget() +
+        log.i("send fromuser "+messageResponse.getFrom()+" target "+messageResponse.getTarget() +
                 " content type "+messageResponse.getContent().getType()+" tos "+messageResponse.getTos()+"direct "+messageResponse.getDirection()
                 + "status "+messageResponse.getStatus()+" messageUid "+messageResponse.getMessageUid() +" messageId "+messageResponse.getMessageId());
         builder.setFromUser(messageResponse.getFrom());
@@ -483,6 +489,9 @@ public abstract class AbstractProtoService implements PushMessageCallback {
                +" localcontent "+messageResponse.getContent().getLocalContent()
     +" mediaType "+messageResponse.getContent().getMediaType());
 
+        if(isTransparentFlag(messageResponse.getContent().getType())){
+            messageContentBuilder.setPersistFlag(ProtoConstants.PersistFlag.Transparent);
+        }
 
         builder.setContent(messageContentBuilder.build());
         return builder.build();
@@ -502,6 +511,13 @@ public abstract class AbstractProtoService implements PushMessageCallback {
             return null;
         }
 
+    }
 
+    private boolean isTransparentFlag(int contentType){
+        return contentType == ContentType_Typing ||
+                contentType == ContentType_Call_Accept_T ||
+                contentType == ContentType_Call_Signal ||
+                contentType == ContentType_Call_End ||
+                contentType == ContentType_Call_Accept ;
     }
 }

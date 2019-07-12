@@ -38,7 +38,7 @@ public class RemoteMessageHandler extends AbstractMessageHandler{
                 //服务端返回的是降序排列，需要颠倒一下
                 for(int i = size -1 ; i >= 0; i--){
                     WFCMessage.Message wfcMessage = pullMessageResult.getMessage(i);
-                    if(canPersistent(wfcMessage.getContent().getType())){
+                    if(protoService.getImMemoryStore().canPersistent(wfcMessage.getContent().getType())){
                         ProtoMessage protoMessage = protoService.convertProtoMessage(wfcMessage);
                         protoMessageList.add(protoMessage);
                     }

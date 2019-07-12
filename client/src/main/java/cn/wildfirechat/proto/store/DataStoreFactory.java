@@ -6,6 +6,7 @@ import android.preference.PreferenceManager;
 import com.comsince.github.logger.Log;
 import com.comsince.github.logger.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import cn.wildfirechat.model.ProtoConversationInfo;
@@ -109,7 +110,7 @@ public class DataStoreFactory implements ImMemoryStore{
 
     @Override
     public ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser) {
-        return protoMessageDataStore.getMessages(conversationType,target,line,fromIndex,before,count,withUser);
+        return filterProMessage(protoMessageDataStore.getMessages(conversationType,target,line,fromIndex,before,count,withUser));
     }
 
     @Override
@@ -129,7 +130,14 @@ public class DataStoreFactory implements ImMemoryStore{
 
     @Override
     public ProtoMessage[] filterProMessage(ProtoMessage[] protoMessages) {
-        return memoryStore.filterProMessage(protoMessages);
+        List<ProtoMessage> destPro = new ArrayList<>();
+        for(ProtoMessage sourceProto : protoMessages){
+            if(canPersistent(sourceProto.getContent().getType())){
+                destPro.add(sourceProto);
+            }
+        }
+        ProtoMessage[] resultprotoMessage = new ProtoMessage[destPro.size()];
+        return destPro.toArray(resultprotoMessage);
     }
 
     @Override
@@ -145,6 +153,11 @@ public class DataStoreFactory implements ImMemoryStore{
     @Override
     public boolean updateMessageUid(long protoMessageId, long messageUid) {
         return protoMessageDataStore.updateMessageUid(protoMessageId,messageUid);
+    }
+
+    @Override
+    public boolean canPersistent(int contentType) {
+        return protoMessageDataStore.canPersistent(contentType);
     }
 
     @Override

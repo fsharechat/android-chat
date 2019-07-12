@@ -31,17 +31,4 @@ public abstract class AbstractMessageHandler implements MessageHandler{
         return protoService.requestMap.remove(messageId).getCallback();
     }
 
-    /**
-     * 注意这里屏蔽了通话相关的指令，这些消息时不存储到数据中
-     * */
-    protected boolean canPersistent(int contentType){
-        return contentType != MessageContentType.ContentType_Typing &&
-                contentType != ContentType_Call_End &&
-                contentType != ContentType_Call_Accept &&
-                contentType != ContentType_Call_Signal &&
-                contentType != ContentType_Call_Modify &&
-                contentType != ContentType_Call_Accept_T
-                ;
-    }
-
 }

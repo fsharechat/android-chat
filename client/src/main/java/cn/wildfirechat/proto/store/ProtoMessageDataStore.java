@@ -15,6 +15,11 @@ import cn.wildfirechat.model.Conversation;
 import cn.wildfirechat.model.ProtoConversationInfo;
 import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoUnreadCount;
+
+import static cn.wildfirechat.message.core.MessageContentType.ContentType_Call_Accept;
+import static cn.wildfirechat.message.core.MessageContentType.ContentType_Call_Accept_T;
+import static cn.wildfirechat.message.core.MessageContentType.ContentType_Call_End;
+import static cn.wildfirechat.message.core.MessageContentType.ContentType_Call_Signal;
 import static cn.wildfirechat.remote.UserSettingScope.ConversationSilent;
 import static cn.wildfirechat.remote.UserSettingScope.ConversationTop;
 
@@ -149,19 +154,35 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
     }
 
     @Override
+    public boolean canPersistent(int contentType) {
+        return contentType != MessageContentType.ContentType_Typing &&
+                contentType != ContentType_Call_End &&
+                contentType != ContentType_Call_Accept &&
+                contentType != ContentType_Call_Signal &&
+                //contentType != ContentType_Call_Modify &&
+                contentType != ContentType_Call_Accept_T
+                ;
+    }
+
+    /**
+     * 发送消息时也会调用这里，所以这里也需要过滤消息
+     * */
+    @Override
     public void addProtoMessageByTarget(String target, ProtoMessage protoMessage, boolean isPush) {
         logger.i("add target "+target+" contentType "+protoMessage.getContent().getType());
-        insertProtoMessage(target,protoMessage);
-        if(isPush){
-            //设置未读消息
-            int unReadCount = 0;
-            if(unReadCountMap.get(protoMessage.getTarget()) != null){
-                unReadCount = unReadCountMap.get(protoMessage.getTarget());
+        if(canPersistent(protoMessage.getContent().getType())){
+            insertProtoMessage(target,protoMessage);
+            if(isPush){
+                //设置未读消息
+                int unReadCount = 0;
+                if(unReadCountMap.get(protoMessage.getTarget()) != null){
+                    unReadCount = unReadCountMap.get(protoMessage.getTarget());
+                }
+                unReadCountMap.put(protoMessage.getTarget(),++unReadCount);
             }
-            unReadCountMap.put(protoMessage.getTarget(),++unReadCount);
-        }
 
-        createOrUpdateConversation(target,protoMessage.getConversationType(),protoMessage);
+            createOrUpdateConversation(target,protoMessage.getConversationType(),protoMessage);
+        }
     }
 
     @Override

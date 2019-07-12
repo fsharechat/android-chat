@@ -34,6 +34,7 @@ public interface ImMemoryStore {
     boolean updateMessageContent(ProtoMessage msg);
     boolean updateMessageStatus(long protoMessageId,int status);
     boolean updateMessageUid(long protoMessageId,long messageUid);
+    boolean canPersistent(int contentType);
     ProtoMessage getLastMessage(String target);
     long getTargetLastMessageId(String targetId);
     long getLastMessageSeq();

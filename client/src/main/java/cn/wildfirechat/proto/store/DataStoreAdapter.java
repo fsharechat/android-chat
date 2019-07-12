@@ -122,6 +122,11 @@ public class DataStoreAdapter implements ImMemoryStore{
     }
 
     @Override
+    public boolean canPersistent(int contentType) {
+        return false;
+    }
+
+    @Override
     public ProtoMessage getLastMessage(String target) {
         return null;
     }

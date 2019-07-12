@@ -54,8 +54,9 @@ public class ReceiveMessageHandler extends AbstractMessageHandler {
                     public void run() {
                         long head = pullMessageResult.getHead();
                         logger.i("message count "+pullMessageResult.getMessageCount()+" head "+head);
-                        protoService.getImMemoryStore().updateMessageSeq(head);
-
+                        if(head != 0){
+                            protoService.getImMemoryStore().updateMessageSeq(head);
+                        }
                         boolean isUserPull = false;
                         RequestInfo requestInfo = protoService.requestMap.remove(header.getMessageId());
                         if(requestInfo != null && requestInfo.getCallback() != null){
@@ -82,9 +83,9 @@ public class ReceiveMessageHandler extends AbstractMessageHandler {
         Map<String,List<ProtoMessage>> protoMessageMap = new HashMap<>();
         for(WFCMessage.Message wfcMessage : wfcMessageList){
             ProtoMessage protoMessage = protoService.convertProtoMessage(wfcMessage);
-            logger.i("current message target "+protoMessage.getTarget()+" contentType "+protoMessage.getContent().getType());
+            //logger.i("current message target "+protoMessage.getTarget()+" contentType "+protoMessage.getContent().getType());
 
-            if(canPersistent(protoMessage.getContent().getType())){
+            if(protoService.getImMemoryStore().canPersistent(protoMessage.getContent().getType())){
                 String target = protoMessage.getTarget();
                 List<ProtoMessage> protoMessages = protoMessageMap.get(target);
                 if(protoMessages == null){
@@ -97,7 +98,7 @@ public class ReceiveMessageHandler extends AbstractMessageHandler {
         List<ProtoMessage> conversationProtoMessage = new ArrayList<>();
         for(Map.Entry<String,List<ProtoMessage>> entry : protoMessageMap.entrySet()){
             String target = entry.getKey();
-            logger.i("current conversation target "+target);
+            //logger.i("current conversation target "+target);
             List<ProtoMessage> addProtoMessages = entry.getValue();
             conversationProtoMessage.add(addProtoMessages.get(addProtoMessages.size() - 1));
             protoService.getImMemoryStore().addProtoMessagesByTarget(target,addProtoMessages,false);
@@ -114,18 +115,20 @@ public class ReceiveMessageHandler extends AbstractMessageHandler {
     private void processNotifyPullMessage(List<WFCMessage.Message> wfcMessageList){
         List<ProtoMessage> resultProtoMessageList = new ArrayList<>();
         for(WFCMessage.Message wfcMessage : wfcMessageList){
-            logger.i("messageType "+wfcMessage.getContent().getType());
             ProtoMessage protoMessage = protoService.convertProtoMessage(wfcMessage);
+            logger.i("target-> "+protoMessage.getTarget()+" messageType-> "+wfcMessage.getContent().getType());
+
             //为什么要去重，因为语音通话消息信令发送频繁，容易出现消息重复，可能影响通话流程
             //这里的消息最好在一个线程里面进行，不然插入数据还没生效，可能出现幻读，否则会出现信令重复，可能出现意想不到的结果
             ProtoMessage existProtoMessage = protoService.getImMemoryStore().getMessage(protoMessage.getMessageId());
             if(existProtoMessage == null) {
                 resultProtoMessageList.add(protoMessage);
+                //所有透传的消息都要发送给目标，只是存储的时候需要过滤,这里透传消息功能没有完成，还是需要存储
+                if(protoService.getImMemoryStore().canPersistent(protoMessage.getContent().getType())){
+                    protoService.getImMemoryStore().addProtoMessageByTarget(protoMessage.getTarget(),protoMessage,true);
+                }
             }
-            //所有透传的消息都要发送给目标，只是存储的时候需要过滤
-            if(canPersistent(protoMessage.getContent().getType())){
-                protoService.getImMemoryStore().addProtoMessageByTarget(protoMessage.getTarget(),protoMessage,true);
-            }
+
         }
         ProtoMessage[] protoMessagesArr = new ProtoMessage[resultProtoMessageList.size()];
         resultProtoMessageList.toArray(protoMessagesArr);
