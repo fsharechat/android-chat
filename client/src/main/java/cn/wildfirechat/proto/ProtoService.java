@@ -286,14 +286,25 @@ public class ProtoService extends AbstractProtoService {
     }
 
 
-    public void pullMessage(long messageId,int type){
+    /**
+     * 主动拉取有回调
+     * */
+    public void pullMessage(long messageId,int type,Object callback){
         log.i("pullMessageId "+messageId);
         WFCMessage.PullMessageRequest pullMessageRequest = WFCMessage.PullMessageRequest.newBuilder()
                 .setId(messageId)
                 .setType(type)
                 .build();
-        sendMessage(Signal.PUBLISH,SubSignal.MP,pullMessageRequest.toByteArray(),null);
+        sendMessage(Signal.PUBLISH,SubSignal.MP,pullMessageRequest.toByteArray(),callback);
     }
+
+    /**
+     * 通知拉取，无回调
+     * */
+    public void pullMessage(long messageId,int type){
+        pullMessage(messageId,type,null);
+    }
+
 
 
     /**

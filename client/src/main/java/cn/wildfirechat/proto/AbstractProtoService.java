@@ -280,26 +280,6 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         });
     }
 
-
-//    protected void sendMessage(Signal signal,SubSignal subSignal,byte[] message,String callbackParam,Object callback){
-//        scheduledExecutorService.execute(new Runnable() {
-//            @Override
-//            public void run() {
-//                int messageId = PreferenceManager.getDefaultSharedPreferences(context).getInt("message_id",0);
-//                log.i("sendMessage send signal "+signal+" subSignal "+subSignal+" messageId "+messageId);
-//                androidNIOClient.sendMessage(signal, subSignal,messageId, message);
-//                if(callback != null){
-//                    RequestInfo requestInfo = new RequestInfo(signal,subSignal,callback.getClass(),callback);
-//                    if(!TextUtils.isEmpty(callbackParam)){
-//                        requestInfo.setCallbackParam(callbackParam);
-//                    }
-//                    requestMap.put(messageId,requestInfo);
-//                }
-//                PreferenceManager.getDefaultSharedPreferences(context).edit().putInt("message_id",++messageId).apply();
-//            }
-//        });
-//    }
-
     protected SimpleFuture sendMessageSync(Signal signal,SubSignal subSignal,byte[] message){
         SimpleFuture simpleFuture = new SimpleFuture();
         scheduledExecutorService.execute(new Runnable() {

@@ -4,6 +4,8 @@ import com.comsince.github.core.ByteBufferList;
 import com.comsince.github.push.Header;
 import com.comsince.github.push.Signal;
 import com.google.protobuf.InvalidProtocolBufferException;
+
+import cn.wildfirechat.proto.JavaProtoLogic;
 import cn.wildfirechat.proto.ProtoService;
 import cn.wildfirechat.proto.WFCMessage;
 
@@ -29,7 +31,23 @@ public class ConnectAckMessageHandler extends AbstractMessageHandler {
                 @Override
                 public void run() {
                     protoService.getMyFriendList(true);
-                    protoService.pullMessage(lastMessageSeq,0);
+                    //如果lastMessageSeq为0表示初始用户下拉消息，其他为连接获取未读消息
+                    if(lastMessageSeq != 0){
+                        protoService.pullMessage(lastMessageSeq,0);
+                    } else {
+                        protoService.pullMessage(lastMessageSeq, 0, new JavaProtoLogic.IGeneralCallback() {
+                            @Override
+                            public void onSuccess() {
+                                logger.i("connect pull message success");
+                            }
+
+                            @Override
+                            public void onFailure(int errorCode) {
+                                logger.i("connect pull message fail "+errorCode);
+                            }
+                        });
+                    }
+
                 }
             });
         } catch (InvalidProtocolBufferException e) {
