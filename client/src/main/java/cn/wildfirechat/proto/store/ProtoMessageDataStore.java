@@ -19,6 +19,7 @@ import cn.wildfirechat.model.ProtoUnreadCount;
 import static cn.wildfirechat.message.core.MessageContentType.ContentType_Call_Accept;
 import static cn.wildfirechat.message.core.MessageContentType.ContentType_Call_Accept_T;
 import static cn.wildfirechat.message.core.MessageContentType.ContentType_Call_End;
+import static cn.wildfirechat.message.core.MessageContentType.ContentType_Call_Modify;
 import static cn.wildfirechat.message.core.MessageContentType.ContentType_Call_Signal;
 import static cn.wildfirechat.remote.UserSettingScope.ConversationSilent;
 import static cn.wildfirechat.remote.UserSettingScope.ConversationTop;
@@ -159,7 +160,7 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
                 contentType != ContentType_Call_End &&
                 contentType != ContentType_Call_Accept &&
                 contentType != ContentType_Call_Signal &&
-                //contentType != ContentType_Call_Modify &&
+                contentType != ContentType_Call_Modify &&
                 contentType != ContentType_Call_Accept_T
                 ;
     }

@@ -518,6 +518,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
                 contentType == ContentType_Call_Accept_T ||
                 contentType == ContentType_Call_Signal ||
                 contentType == ContentType_Call_End ||
+                contentType == ContentType_Call_Modify ||
                 contentType == ContentType_Call_Accept ;
     }
 }
