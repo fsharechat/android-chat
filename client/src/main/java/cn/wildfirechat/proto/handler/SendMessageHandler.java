@@ -29,10 +29,13 @@ public class SendMessageHandler extends AbstractMessageHandler {
        if(errorCode == 0){
            long messageUid = byteBufferList.getLong();
            long timestamp = byteBufferList.getLong();
-           ProtoService.log.i("messageUid "+messageUid+" timestamp "+timestamp);
-           protoService.getImMemoryStore().updateMessageUid(requestInfo.getProtoMessageId(),messageUid);
-           protoService.getImMemoryStore().updateMessageStatus(requestInfo.getProtoMessageId(), MessageStatus.Sent.ordinal());
-           protoService.getImMemoryStore().increaseMessageSeq();
+           boolean updateUid = protoService.getImMemoryStore().updateMessageUid(requestInfo.getProtoMessageId(),messageUid);
+           boolean updateStatus = protoService.getImMemoryStore().updateMessageStatus(requestInfo.getProtoMessageId(), MessageStatus.Sent.ordinal());
+           logger.i("messageUid "+messageUid+" timestamp "+timestamp+" updateUid "+updateUid+" updateStatus "+updateStatus);
+           //有很多消息transparent消息在服务端和本地是不存储的，这些消息不进行seq计数
+           if(updateUid && updateStatus){
+               protoService.getImMemoryStore().increaseMessageSeq();
+           }
            sendMessageCallback.onSuccess(messageUid,timestamp);
        } else {
            sendMessageCallback.onFailure(errorCode);

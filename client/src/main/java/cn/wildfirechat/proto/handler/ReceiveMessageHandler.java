@@ -27,6 +27,9 @@ import cn.wildfirechat.proto.WFCMessage;
  * 采用直接发送推送信令，不会出现重复拉取的问题
  * --主动拉取消息拉取
  * 用户登录完成时，主动发起MP信令拉去消息，这类消息不是push类型，属于用户主动发起的消息拉取行为
+ *
+ * --transparent消息
+ * 这部分消息大多是通话信令，当然也包括正在输入等状态指令，这些消息是服务端直接推送下来，不走notify策略
  * */
 public class ReceiveMessageHandler extends AbstractMessageHandler {
 
@@ -54,9 +57,6 @@ public class ReceiveMessageHandler extends AbstractMessageHandler {
                     public void run() {
                         long head = pullMessageResult.getHead();
                         logger.i("message count "+pullMessageResult.getMessageCount()+" head "+head);
-                        if(head != 0){
-                            protoService.getImMemoryStore().updateMessageSeq(head);
-                        }
                         boolean isUserPull = false;
                         RequestInfo requestInfo = protoService.requestMap.remove(header.getMessageId());
                         if(requestInfo != null && requestInfo.getCallback() != null){

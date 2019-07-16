@@ -48,6 +48,8 @@ public class ConnectAckMessageHandler extends AbstractMessageHandler {
                         });
                     }
 
+                    //校准消息序列号
+                    protoService.getImMemoryStore().updateMessageSeq(connectAckPayload.getMsgHead());
                 }
             });
         } catch (InvalidProtocolBufferException e) {
