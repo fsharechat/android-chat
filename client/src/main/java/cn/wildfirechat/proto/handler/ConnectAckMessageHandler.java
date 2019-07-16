@@ -27,20 +27,15 @@ public class ConnectAckMessageHandler extends AbstractMessageHandler {
             WFCMessage.ConnectAckPayload connectAckPayload = WFCMessage.ConnectAckPayload.parseFrom(byteBufferList.getAllByteArray());
             long lastMessageSeq = protoService.getImMemoryStore().getLastMessageSeq();
             logger.i(TAG,"friendHead "+connectAckPayload.getFriendHead()+" msgHead "+connectAckPayload.getMsgHead()+" lastMessageSeq "+lastMessageSeq+" serverTime "+connectAckPayload.getServerTime());
-            if(lastMessageSeq != 0 && lastMessageSeq != connectAckPayload.getMsgHead()){
-                lastMessageSeq = connectAckPayload.getMsgHead();
-                logger.i("correct message id "+lastMessageSeq);
-            }
-            long finalLastMessageSeq = lastMessageSeq;
             workExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
                     protoService.getMyFriendList(true);
                     //如果lastMessageSeq为0表示初始用户下拉消息，其他为连接获取未读消息
-                    if(finalLastMessageSeq != 0){
-                        protoService.pullMessage(finalLastMessageSeq,0);
+                    if(lastMessageSeq != 0){
+                        protoService.pullMessage(lastMessageSeq,0);
                     } else {
-                        protoService.pullMessage(finalLastMessageSeq, 0, new JavaProtoLogic.IGeneralCallback() {
+                        protoService.pullMessage(lastMessageSeq, 0, new JavaProtoLogic.IGeneralCallback() {
                             @Override
                             public void onSuccess() {
                                 logger.i("connect pull message success");

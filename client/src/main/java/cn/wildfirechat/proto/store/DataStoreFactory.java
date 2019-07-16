@@ -171,19 +171,23 @@ public class DataStoreFactory implements ImMemoryStore{
     }
 
     @Override
-    public long getLastMessageSeq() {
-        return preferences.getLong(LAST_MESSAGE_SEQ,0);
+    public synchronized long getLastMessageSeq() {
+        long lastSeq = preferences.getLong(LAST_MESSAGE_SEQ,0);
+        logger.i("getLastMessageSeq "+lastSeq);
+        return lastSeq;
     }
 
     @Override
-    public void updateMessageSeq(long messageSeq) {
+    public synchronized void updateMessageSeq(long messageSeq) {
         preferences.edit().putLong(LAST_MESSAGE_SEQ,messageSeq).commit();
+        logger.i("updateMessageSeq "+messageSeq);
     }
 
     @Override
-    public long increaseMessageSeq() {
+    public synchronized long increaseMessageSeq() {
         long seq = preferences.getLong(LAST_MESSAGE_SEQ,0);
         preferences.edit().putLong(LAST_MESSAGE_SEQ,++seq).commit();
+        logger.i("increaseMessageSeq "+seq);
         return seq;
     }
 
