@@ -4,9 +4,11 @@ import java.util.List;
 import java.util.Map;
 
 import cn.wildfirechat.model.ProtoConversationInfo;
+import cn.wildfirechat.model.ProtoConversationSearchresult;
 import cn.wildfirechat.model.ProtoFriendRequest;
 import cn.wildfirechat.model.ProtoGroupInfo;
 import cn.wildfirechat.model.ProtoGroupMember;
+import cn.wildfirechat.model.ProtoGroupSearchResult;
 import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoUserInfo;
 
@@ -42,6 +44,11 @@ public class DataStoreAdapter implements ImMemoryStore{
     }
 
     @Override
+    public ProtoUserInfo[] searchFriends(String keyword) {
+        return new ProtoUserInfo[0];
+    }
+
+    @Override
     public long getFriendRequestHead() {
         return 0;
     }
@@ -74,6 +81,11 @@ public class DataStoreAdapter implements ImMemoryStore{
     @Override
     public void addProtoMessagesByTarget(String target, List<ProtoMessage> protoMessages, boolean isPush) {
 
+    }
+
+    @Override
+    public ProtoMessage[] searchMessage(int conversationType, String target, int line, String keyword) {
+        return new ProtoMessage[0];
     }
 
     @Override
@@ -162,6 +174,11 @@ public class DataStoreAdapter implements ImMemoryStore{
     }
 
     @Override
+    public ProtoConversationSearchresult[] searchConversation(String keyword, int[] conversationTypes, int[] lines) {
+        return new ProtoConversationSearchresult[0];
+    }
+
+    @Override
     public void createPrivateConversation(String target) {
 
     }
@@ -224,6 +241,11 @@ public class DataStoreAdapter implements ImMemoryStore{
     @Override
     public void addGroupMember(String groupId, ProtoGroupMember[] protoGroupMembers) {
 
+    }
+
+    @Override
+    public ProtoGroupSearchResult[] searchGroups(String keyword) {
+        return new ProtoGroupSearchResult[0];
     }
 
     @Override

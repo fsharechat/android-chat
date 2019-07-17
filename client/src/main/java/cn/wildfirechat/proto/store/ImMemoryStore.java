@@ -5,9 +5,11 @@ import java.util.List;
 import java.util.Map;
 
 import cn.wildfirechat.model.ProtoConversationInfo;
+import cn.wildfirechat.model.ProtoConversationSearchresult;
 import cn.wildfirechat.model.ProtoFriendRequest;
 import cn.wildfirechat.model.ProtoGroupInfo;
 import cn.wildfirechat.model.ProtoGroupMember;
+import cn.wildfirechat.model.ProtoGroupSearchResult;
 import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoUserInfo;
 
@@ -18,6 +20,7 @@ public interface ImMemoryStore {
     void setFriendArr(String[] friendArr);
     boolean hasFriend();
     boolean isMyFriend(String userId);
+    ProtoUserInfo[] searchFriends(String keyword);
     long getFriendRequestHead();
     void setFriendRequestHead(long friendRequestHead);
     ProtoFriendRequest[] getIncomingFriendRequest();
@@ -25,6 +28,7 @@ public interface ImMemoryStore {
     void addProtoFriendRequest(ProtoFriendRequest protoFriendRequest);
     void addProtoMessageByTarget(String target, ProtoMessage protoMessage, boolean isPush);
     void addProtoMessagesByTarget(String target, List<ProtoMessage> protoMessages, boolean isPush);
+    ProtoMessage[] searchMessage(int conversationType, String target, int line, String keyword);
     ProtoMessage[] getMessages(int conversationType, String target);
     ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser);
     ProtoMessage getMessage(long messageId);
@@ -42,6 +46,7 @@ public interface ImMemoryStore {
     long increaseMessageSeq();
     void clearUnreadStatus(int conversationType, String target, int line);
     int getUnreadCount(String target);
+    ProtoConversationSearchresult[] searchConversation(String keyword, int[] conversationTypes, int[] lines);
     void createPrivateConversation(String target);
     void removeConversation(int conversationType, String target, int line, boolean clearMsg);
     void setConversationDraft(int conversationType, String target, int line, String draft);
@@ -55,6 +60,7 @@ public interface ImMemoryStore {
     ProtoGroupMember[] getGroupMembers(String groupId);
     void addGroupMember(String groupId,ProtoGroupMember protoGroupMember);
     void addGroupMember(String groupId,ProtoGroupMember[] protoGroupMembers);
+    ProtoGroupSearchResult[] searchGroups(String keyword);
     ProtoGroupMember getGroupMember(String groupId, String memberId);
     ProtoUserInfo getUserInfo(String userId);
     ProtoUserInfo[] getUserInfos(String[] userIds);

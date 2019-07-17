@@ -350,54 +350,10 @@ public class JavaProtoLogic {
 
     }
 
-//    public static ProtoConversationInfo[] getPrivateConversations(){
-//        String[] friendList = protoService.getMyFriendList(false);
-//        if(friendList != null){
-//            ProtoConversationInfo[] protoConversationInfos = new ProtoConversationInfo[friendList.length];
-//            int i = 0;
-//            for(String friend : friendList){
-//                ProtoConversationInfo protoConversationInfo = new ProtoConversationInfo();
-//                protoConversationInfo.setConversationType(Conversation.ConversationType.Single.ordinal());
-//                protoConversationInfo.setLine(0);
-//                protoConversationInfo.setTarget(friend);
-//                ProtoMessage protoMessage = protoService.getImMemoryStore().getLastMessage(friend);
-//                if(protoMessage != null &&(!TextUtils.isEmpty(protoMessage.getContent().getPushContent())
-//                        || !TextUtils.isEmpty(protoMessage.getContent().getSearchableContent())) ){
-//                    protoMessage.setStatus(5);
-//                }
-//                protoConversationInfo.setLastMessage(protoMessage);
-//
-//                ProtoUnreadCount protoUnreadCount = new ProtoUnreadCount();
-//                protoUnreadCount.setUnread(protoService.getImMemoryStore().getUnreadCount(friend));
-//                //logger.i("friend "+friend+" unread "+protoService.getImMemoryStore().getUnreadCount(friend));
-//                protoConversationInfo.setUnreadCount(protoUnreadCount);
-//                protoConversationInfo.setTimestamp(System.currentTimeMillis());
-//                protoConversationInfos[i++] =protoConversationInfo;
-//            }
-//            return protoConversationInfos;
-//        } else {
-//            return new ProtoConversationInfo[0];
-//        }
-//    }
-
     public static  ProtoConversationInfo getConversation(int conversationType, String target, int line){
         ProtoConversationInfo protoConversationInfo = protoService.getImMemoryStore().getConversation(conversationType,target,line);
         protoConversationInfo.setTimestamp(System.currentTimeMillis());
         return protoConversationInfo;
-//        int[] conversationTypes = new int[1];
-//        int[] lines = new int[1];
-//        conversationTypes[0] = conversationType;
-//        lines[0] = line;
-//        ProtoConversationInfo[] protoConversationInfos = getConversations(conversationTypes,lines);
-//        if(protoConversationInfos != null){
-//            for(ProtoConversationInfo protoConversationInfo : protoConversationInfos){
-//                if(protoConversationInfo.getTarget().equals(target)){
-//                    protoConversationInfo.setTimestamp(System.currentTimeMillis());
-//                    return protoConversationInfo;
-//                }
-//            }
-//        }
-//        return new ProtoConversationInfo();
     }
 
     public static  ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser){
@@ -538,29 +494,25 @@ public class JavaProtoLogic {
         protoService.modifyMyInfo(values,callback);
     }
 
-    //- (BOOL)deleteMessage:(long)messageId
     public static boolean deleteMessage(long messageId){
         return protoService.deleteMessage(messageId);
     }
 
-    //- (NSArray<WFCCConversationSearchInfo *> *)searchConversation:(NSString *)keyword
+
     public static ProtoConversationSearchresult[] searchConversation(String keyword, int[] conversationTypes, int[] lines){
-        return new ProtoConversationSearchresult[0];
+        return protoService.getImMemoryStore().searchConversation(keyword,conversationTypes,lines);
     }
 
-    //- (NSArray<WFCCMessage *> *)searchMessage:(WFCCConversation *)conversation keyword:(NSString *)keyword
     public static ProtoMessage[] searchMessage(int conversationType, String target, int line, String keyword){
-        return new ProtoMessage[0];
+        return protoService.getImMemoryStore().searchMessage(conversationType,target,line,keyword);
     }
 
-    //- (NSArray<WFCCUserInfo *> *)searchFriends:(NSString *)keyword;
     public static ProtoUserInfo[] searchFriends(String keyword){
-        return new ProtoUserInfo[0];
+        return protoService.getImMemoryStore().searchFriends(keyword);
     }
 
-    //- (NSArray<WFCCGroupSearchInfo *> *)searchGroups:(NSString *)keyword;
     public static ProtoGroupSearchResult[] searchGroups(String keyword){
-        return new ProtoGroupSearchResult[0];
+        return protoService.getImMemoryStore().searchGroups(keyword);
     }
 
     public static void createGroup(String groupId, String groupName, String groupPortrait, String[] memberIds, int[] notifyLines, ProtoMessageContent notifyMsg, JavaProtoLogic.IGeneralCallback2 callback){
@@ -614,9 +566,10 @@ public class JavaProtoLogic {
     public static ProtoChannelInfo getChannelInfo(String channelId, boolean refresh){
         return new ProtoChannelInfo();
     }
-    //
-//- (void)searchChannel:(NSString *)keyword success:(void(^)(NSArray<WFCCChannelInfo *> *machedChannels))successBlock error:(void(^)(int errorCode))errorBlock;
-    public static void searchChannel(String keyword, JavaProtoLogic.ISearchChannelCallback callback){}
+
+    public static void searchChannel(String keyword, JavaProtoLogic.ISearchChannelCallback callback){
+        callback.onSuccess(new ProtoChannelInfo[0]);
+    }
 
     public static void modifyChannelInfo(String channelId, int modifyType, String newValue, JavaProtoLogic.IGeneralCallback callback){}
 

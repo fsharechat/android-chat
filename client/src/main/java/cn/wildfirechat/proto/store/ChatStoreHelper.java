@@ -1,6 +1,7 @@
 package cn.wildfirechat.proto.store;
 
 import android.content.Context;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
@@ -21,6 +22,7 @@ public class ChatStoreHelper extends SQLiteOpenHelper {
             " message_id INTEGER DEFAULT 0," +
             " message_uid INTEGER DEFAULT 0," +
             " message_data BLOB, " +
+            " message_searchable_data TEXT," +
             " date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
 
     private static final String queryCreateConversationsTable = "CREATE TABLE IF NOT EXISTS 'conversations' " +
@@ -31,7 +33,7 @@ public class ChatStoreHelper extends SQLiteOpenHelper {
             " conversation_info BLOB, " +
             " date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
 
-    private static final int DATABASE_VERSION       = 2;
+    private static final int DATABASE_VERSION       = 3;
 
     private static ChatStoreHelper sInstance;
 

@@ -33,6 +33,7 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
     public static final String COLUMN_ID            = "id";
     public static final String COLUMN_MESSAGE_TARGET = "message_target";
     public static final String COLUMN_MESSAGE_DATA    = "message_data";
+    public static final String COLUMN_MESSAGE_SEARCHABLE_DATA = "message_searchable_data";
     public static final String COLUMN_MESSAGE_ID   = "message_id";
     public static final String COLUMN_MESSAGE_UID    = "message_uid";
     public static final String COLUMN_DATE_CREATED  = "date_created";
@@ -66,7 +67,7 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
         super(context);
     }
 
-    private List<Map<String, Object>> queryMessageDatabase(String query, String orderBy) {
+    public List<Map<String, Object>> queryMessageDatabase(String query, String orderBy) {
         List<Map<String, Object>> res = new ArrayList<>();
         if (isDatabaseOpen()) {
             Cursor cursor = database.query(ChatStoreHelper.TABLE_MESSAGES, allMessageColumns, query,
@@ -89,7 +90,7 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
         return res;
     }
 
-    private List<Map<String,Object>> queryConversation(String query,String orderBy){
+    public List<Map<String,Object>> queryConversation(String query,String orderBy){
         List<Map<String, Object>> res = new ArrayList<>();
         if (isDatabaseOpen()) {
             Cursor cursor = database.query(ChatStoreHelper.TABLE_CONVERSATIONS, allConversationsColumns, query,
@@ -121,6 +122,7 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
             values.put(COLUMN_MESSAGE_TARGET,target);
             values.put(COLUMN_MESSAGE_UID,protoMessage.getMessageUid());
             values.put(COLUMN_MESSAGE_ID,protoMessage.getMessageId());
+            values.put(COLUMN_MESSAGE_SEARCHABLE_DATA,protoMessage.getContent().getSearchableContent());
             logger.i("insert messageId  "+protoMessage.getMessageId()+" target "+protoMessage.getTarget()+" uid "+protoMessage.getMessageUid()+" content "+protoMessage.getContent().getSearchableContent());
             lastInsertedMessageRowId = database.insert(ChatStoreHelper.TABLE_MESSAGES, null, values);
         }
@@ -212,20 +214,36 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
     @Override
     public ProtoMessage[] getMessages(int conversationType, String target, int line, long fromIndex, boolean before, int count, String withUser) {
         String query = COLUMN_MESSAGE_TARGET + "=" + "'"+target+"'";
+        String orderBy = "message_id DESC LIMIT " + count;
         if(fromIndex != 0){
-            query = query +" and "+COLUMN_MESSAGE_ID +" < "+fromIndex;
+            if(before){
+                orderBy = "message_id DESC LIMIT " + count;
+                query = query +" and "+COLUMN_MESSAGE_ID +" < "+fromIndex;
+            } else {
+                orderBy = "message_id ASC LIMIT " + count;
+                query = query +" and "+COLUMN_MESSAGE_ID +" > "+fromIndex;
+            }
         }
-        List<Map<String, Object>> messageList = queryMessageDatabase(query,"message_id DESC LIMIT " + count);
+        List<Map<String, Object>> messageList = queryMessageDatabase(query,orderBy);
         if(messageList != null){
             int num = messageList.size();
             List<ProtoMessage> protoMessages = new ArrayList<>();
-            for(int i = num -1 ;i >= 0; i--){
-                Map<String,Object> objectMap = messageList.get(i);
-                long messageId = (long) objectMap.get(COLUMN_MESSAGE_ID);
-                ProtoMessage protoMessage = (ProtoMessage) objectMap.get(COLUMN_MESSAGE_DATA);
-                logger.i("proto messageId "+protoMessage.getMessageId()+" db messageId->"+messageId+" message status "+protoMessage.getStatus()+" contentType "+protoMessage.getContent().getType());
-                protoMessages.add(protoMessage);
+            if(before){
+                for(int i = num -1 ;i >= 0; i--){
+                    Map<String,Object> objectMap = messageList.get(i);
+                    long messageId = (long) objectMap.get(COLUMN_MESSAGE_ID);
+                    ProtoMessage protoMessage = (ProtoMessage) objectMap.get(COLUMN_MESSAGE_DATA);
+                    logger.i("proto messageId "+protoMessage.getMessageId()+" db messageId->"+messageId+" message status "+protoMessage.getStatus()+" contentType "+protoMessage.getContent().getType());
+                    protoMessages.add(protoMessage);
+                }
+            } else {
+                //如果时加载messageId之后的消息，不需要调转顺序
+                for(Map<String,Object> messagesMap : messageList){
+                    ProtoMessage protoMessage = (ProtoMessage) messagesMap.get(COLUMN_MESSAGE_DATA);
+                    protoMessages.add(protoMessage);
+                }
             }
+
             ProtoMessage[] protoMessagesArr = new ProtoMessage[protoMessages.size()];
             logger.i("target "+target+" from messageId "+fromIndex+" size "+protoMessages.size());
             return protoMessages.toArray(protoMessagesArr);

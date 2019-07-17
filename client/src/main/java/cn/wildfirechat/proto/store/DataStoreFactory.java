@@ -9,12 +9,22 @@ import com.comsince.github.logger.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import cn.wildfirechat.model.Conversation;
+import cn.wildfirechat.model.GroupInfo;
 import cn.wildfirechat.model.ProtoConversationInfo;
+import cn.wildfirechat.model.ProtoConversationSearchresult;
 import cn.wildfirechat.model.ProtoFriendRequest;
 import cn.wildfirechat.model.ProtoGroupInfo;
 import cn.wildfirechat.model.ProtoGroupMember;
+import cn.wildfirechat.model.ProtoGroupSearchResult;
 import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoUserInfo;
+import cn.wildfirechat.model.UserInfo;
+
+import static cn.wildfirechat.proto.store.ProtoMessageDataStore.COLUMN_MESSAGE_DATA;
+import static cn.wildfirechat.proto.store.ProtoMessageDataStore.COLUMN_MESSAGE_SEARCHABLE_DATA;
+import static cn.wildfirechat.proto.store.ProtoMessageDataStore.COLUMN_MESSAGE_TARGET;
 
 public class DataStoreFactory implements ImMemoryStore{
     Log logger = LoggerFactory.getLogger(DataStoreFactory.class);
@@ -69,6 +79,23 @@ public class DataStoreFactory implements ImMemoryStore{
     }
 
     @Override
+    public ProtoUserInfo[] searchFriends(String keyword) {
+        List<String> myFriendList = getFriendList();
+        List<ProtoUserInfo> resultProtoUserInfos = new ArrayList<>();
+        for(String uid : myFriendList){
+            ProtoUserInfo protoUserInfo = getUserInfo(uid);
+            logger.i("search friend uid "+uid+" name "+protoUserInfo.getName()+" display name "+protoUserInfo.getDisplayName()+" keyword "+keyword);
+            if(protoUserInfo.getName().contains(keyword) ||
+              protoUserInfo.getDisplayName().contains(keyword)){
+                resultProtoUserInfos.add(protoUserInfo);
+            }
+        }
+        logger.i("search friend result "+resultProtoUserInfos);
+        ProtoUserInfo[] protoUserInfos = new ProtoUserInfo[resultProtoUserInfos.size()];
+        return resultProtoUserInfos.toArray(protoUserInfos);
+    }
+
+    @Override
     public long getFriendRequestHead() {
         return memoryStore.getFriendRequestHead();
     }
@@ -101,6 +128,25 @@ public class DataStoreFactory implements ImMemoryStore{
     @Override
     public void addProtoMessagesByTarget(String target, List<ProtoMessage> protoMessages, boolean isPush) {
         protoMessageDataStore.addProtoMessagesByTarget(target,protoMessages,isPush);
+    }
+
+    @Override
+    public ProtoMessage[] searchMessage(int conversationType, String target, int line, String keyword) {
+        if(keyword.contains("'")){
+            return new ProtoMessage[0];
+        }
+        String query = COLUMN_MESSAGE_TARGET + "=" + "'"+target+"'" +" AND "+COLUMN_MESSAGE_SEARCHABLE_DATA +" LIKE '%"+keyword+"%'";
+        String orderBy = "message_id DESC LIMIT " + 20;
+        List<Map<String, Object>> databaseMessagesList = protoMessageDataStore.queryMessageDatabase(query,orderBy);
+        List<ProtoMessage> resultProtoMessages = new ArrayList<>();
+        if(databaseMessagesList != null){
+            for(Map<String,Object> messagesMap : databaseMessagesList){
+                ProtoMessage protoMessage = (ProtoMessage) messagesMap.get(COLUMN_MESSAGE_DATA);
+                resultProtoMessages.add(protoMessage);
+            }
+        }
+        ProtoMessage[] protoMessages = new ProtoMessage[resultProtoMessages.size()];
+        return resultProtoMessages.toArray(protoMessages);
     }
 
     @Override
@@ -202,6 +248,58 @@ public class DataStoreFactory implements ImMemoryStore{
     }
 
     @Override
+    public ProtoConversationSearchresult[] searchConversation(String keyword, int[] conversationTypes, int[] lines) {
+        List<ProtoConversationSearchresult> protoConversationSearchresultList = new ArrayList<>();
+        String query = "";
+        if(conversationTypes != null){
+            query += ProtoMessageDataStore.COLUMN_CONVERSATION_TYPE + " IN (";
+            for(int conversationType : conversationTypes){
+                query += conversationType +",";
+            }
+            query = query.substring(0,query.lastIndexOf(","))+" )";
+        }
+        if(lines !=  null){
+            query += " AND "+ProtoMessageDataStore.COLUMN_CONVERSATION_LINE +" IN (";
+            for(int line : lines){
+                query += line +",";
+            }
+            query = query.substring(0,query.lastIndexOf(","))+" )";
+        }
+        logger.i("search conversation query "+query);
+        List<Map<String,Object>> groupConversations = protoMessageDataStore.queryConversation(query,null);
+        if(groupConversations != null){
+            for(Map<String,Object> conversation : groupConversations){
+                ProtoConversationInfo protoConversationInfo = (ProtoConversationInfo) conversation.get(ProtoMessageDataStore.COLUMN_CONVERSATION_INFO);
+                String target = protoConversationInfo.getTarget();
+                boolean flag = false;
+                if(protoConversationInfo.getConversationType() == Conversation.ConversationType.Single.ordinal()){
+                    ProtoUserInfo userInfo = getUserInfo(target);
+                    if(userInfo.getDisplayName().contains(keyword) || userInfo.getName().contains(keyword)){
+                        flag = true;
+                    }
+                } else if(protoConversationInfo.getConversationType() == Conversation.ConversationType.Group.ordinal()){
+                    ProtoGroupInfo protoGroupInfo = getGroupInfo(target);
+                    if(protoGroupInfo.getName().contains(keyword)){
+                        flag = true;
+                    }
+                }
+                if(flag){
+                    ProtoConversationSearchresult protoConversationSearchresult = new ProtoConversationSearchresult();
+                    protoConversationSearchresult.setConversationType(protoConversationInfo.getConversationType());
+                    protoConversationSearchresult.setLine(protoConversationInfo.getLine());
+                    protoConversationSearchresult.setTarget(target);
+                    protoConversationSearchresult.setMarchedMessage(protoConversationInfo.getLastMessage());
+                    protoConversationSearchresult.setMarchedCount(1);
+                    protoConversationSearchresult.setTimestamp(protoConversationInfo.getTimestamp());
+                    protoConversationSearchresultList.add(protoConversationSearchresult);
+                }
+            }
+        }
+        ProtoConversationSearchresult[] protoConversationSearchresults = new ProtoConversationSearchresult[protoConversationSearchresultList.size()];
+        return protoConversationSearchresultList.toArray(protoConversationSearchresults);
+    }
+
+    @Override
     public void createPrivateConversation(String target) {
         throw new UnsupportedOperationException();
     }
@@ -264,6 +362,12 @@ public class DataStoreFactory implements ImMemoryStore{
     @Override
     public void addGroupMember(String groupId, ProtoGroupMember[] protoGroupMembers) {
         memoryStore.addGroupMember(groupId,protoGroupMembers);
+    }
+
+    @Override
+    public ProtoGroupSearchResult[] searchGroups(String keyword) {
+        List<ProtoGroupSearchResult> protoGroupSearchResultList = new ArrayList<>();
+        return new ProtoGroupSearchResult[0];
     }
 
     @Override
