@@ -31,7 +31,7 @@ public class AndroidLogger implements Log{
     public void e(String s, Throwable e) {
         String message = "";
         if(e != null){
-            message = e.getMessage();
+            message = s+":"+e.getMessage();
         }
         if(TextUtils.isEmpty(message)){
             message = s;

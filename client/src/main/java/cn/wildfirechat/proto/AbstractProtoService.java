@@ -74,6 +74,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
     public ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
     private volatile boolean userDisconnect = false;
+    private int reconnectNum = 0;
     private AlarmWrapper alarmWrapper;
     Timer heartbeatTimer;
     Timer reconnectTimer;
@@ -99,8 +100,6 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         }
     }
 
-
-
     public void setUserName(String userName){
         this.userName = userName;
     }
@@ -116,9 +115,6 @@ public abstract class AbstractProtoService implements PushMessageCallback {
 
     @Override
     public void receiveMessage(Header header, ByteBufferList byteBufferList) {
-        if(Signal.PING == header.getSignal()){
-            schedule();
-        }
         for(MessageHandler messageHandler : messageHandlers){
             if(messageHandler.match(header)){
                 messageHandler.processMessage(header,byteBufferList);
@@ -132,7 +128,9 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         log.e("comsince receive exception ",e);
         JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusUnconnected);
         cancelHeartTimer();
-        if(!userDisconnect){
+        if(!userDisconnect && reconnectNum < 3){
+            log.i("reconnect num "+reconnectNum);
+            reconnectNum++;
             alarmWrapper.schedule(reconnectTimer =
                     new Timer.Builder().period(10 * 1000)
                             .wakeup(true)
@@ -150,6 +148,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
     @Override
     public void onConnected() {
         log.i("comsince connected");
+        reconnectNum = 0;
         JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnected);
         cancelReconnectTimer();
         sendConnectMessage();
@@ -185,6 +184,22 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         }
     }
 
+    private void forceConnect(){
+        log.i("force connect");
+        if(!userDisconnect && androidNIOClient != null){
+            androidNIOClient.post(new Runnable() {
+                @Override
+                public void run() {
+                    cancelReconnectTimer();
+                    cancelHeartTimer();
+                    androidNIOClient.close();
+                    JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnecting);
+                    androidNIOClient.connect();
+                }
+            },0);
+        }
+    }
+
     private void schedule(){
         alarmWrapper.schedule(heartbeatTimer =
                 new Timer.Builder().period((30 + 30 * interval) * 1000)
@@ -196,7 +211,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
                                 if(current > 8 * 60 * 1000){
                                     current = 8 * 60 * 1000;
                                 }
-                                androidNIOClient.heart(current);
+                                sendHeartbeat(current);
                             }
                         }).build());
     }
@@ -212,6 +227,36 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         if(reconnectTimer != null){
             alarmWrapper.cancel(reconnectTimer);
         }
+    }
+
+    /**
+     * 在应用在前台时尝试发送心跳指令
+     * 在发送指令时需要先判断是否由定时任务尚未执行
+     * */
+    public void tryHeartbeat(){
+        //interval参数不回退
+        if(heartbeatTimer != null){
+            alarmWrapper.cancel(heartbeatTimer);
+        }
+        long current = (30 + 30 * interval) * 1000;
+        log.i("try send heartbeat interval "+current);
+        sendHeartbeat(current);
+    }
+
+    private void sendHeartbeat(long interval){
+        String heartInterval = "{\"interval\":" + interval + "}";
+        sendMessage(Signal.PING, SubSignal.NONE, 1,heartInterval.getBytes(), new JavaProtoLogic.IGeneralCallback() {
+            @Override
+            public void onSuccess() {
+                log.i("send heartbeat interval "+interval+" success");
+                schedule();
+            }
+
+            @Override
+            public void onFailure(int errorCode) {
+                log.i("send heartbeat error");
+            }
+        });
     }
 
     private void sendConnectMessage(){
@@ -269,6 +314,8 @@ public abstract class AbstractProtoService implements PushMessageCallback {
                                         Method onFailure = requestInfo.getType().getMethod("onFailure",int.class);
                                         onFailure.invoke(requestInfo.getCallback(),ErrorCode.SERVICE_DIED);
                                         imMemoryStore.updateMessageStatus(protoMessageId,MessageStatus.Send_Failure.ordinal());
+                                        //如果发送失败，代表链接断开，需要重连
+                                        forceConnect();
                                     } catch (NoSuchMethodException e) {
                                         e.printStackTrace();
                                     } catch (IllegalAccessException e) {

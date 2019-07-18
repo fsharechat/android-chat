@@ -32,6 +32,7 @@ import cn.wildfirechat.proto.handler.GetUserInfoMessageHanlder;
 import cn.wildfirechat.proto.handler.GroupInfoHandler;
 import cn.wildfirechat.proto.handler.GroupMemberHandler;
 import cn.wildfirechat.proto.handler.HandlerFriendRequestHandler;
+import cn.wildfirechat.proto.handler.HeartbeatHandler;
 import cn.wildfirechat.proto.handler.KickoffMembersHandler;
 import cn.wildfirechat.proto.handler.ModifyGroupInfoHandler;
 import cn.wildfirechat.proto.handler.ModifyMyInfoHandler;
@@ -64,6 +65,7 @@ public class ProtoService extends AbstractProtoService {
     }
 
     private void initHandlers(){
+        messageHandlers.add(new HeartbeatHandler(this));
         messageHandlers.add(new ConnectAckMessageHandler(this));
         messageHandlers.add(new SearchUserResultMessageHandler(this));
         messageHandlers.add(new GetUserInfoMessageHanlder(this));

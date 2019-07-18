@@ -251,7 +251,11 @@ public class ClientService extends Service implements
 
         @Override
         public void setForeground(int isForeground) throws RemoteException {
-            //BaseEvent.onForeground(isForeground == 1);
+            boolean flag = (isForeground == 1);
+            if(flag){
+                logger.i("try heartbeat ");
+                JavaProtoLogic.tryHeartbeat();
+            }
         }
 
         @Override

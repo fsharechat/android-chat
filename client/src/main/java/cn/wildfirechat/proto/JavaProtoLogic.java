@@ -278,6 +278,12 @@ public class JavaProtoLogic {
         }
     }
 
+    public static void tryHeartbeat(){
+        if(protoService != null){
+            protoService.tryHeartbeat();
+        }
+    }
+
     public static void setAuthInfo(String userName, String token){
         protoService.setUserName(userName);
         protoService.setToken(token);
