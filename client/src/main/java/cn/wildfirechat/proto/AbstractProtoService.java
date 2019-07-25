@@ -128,11 +128,11 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         log.e("comsince receive exception ",e);
         JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusUnconnected);
         cancelHeartTimer();
-        if(!userDisconnect && reconnectNum < 3){
+        if(!userDisconnect && reconnectNum <= 3){
             log.i("reconnect num "+reconnectNum);
             reconnectNum++;
             alarmWrapper.schedule(reconnectTimer =
-                    new Timer.Builder().period(10 * 1000)
+                    new Timer.Builder().period(reconnectNum * 10 * 1000)
                             .wakeup(true)
                             .action(new Runnable() {
                                 @Override
@@ -202,12 +202,12 @@ public abstract class AbstractProtoService implements PushMessageCallback {
 
     private void schedule(){
         alarmWrapper.schedule(heartbeatTimer =
-                new Timer.Builder().period((30 + 30 * interval) * 1000)
+                new Timer.Builder().period((120 + 30 * interval) * 1000)
                         .wakeup(true)
                         .action(new Runnable() {
                             @Override
                             public void run() {
-                                long current = (30 + 30 * ++interval) * 1000;
+                                long current = (120 + 30 * ++interval) * 1000;
                                 if(current > 8 * 60 * 1000){
                                     current = 8 * 60 * 1000;
                                 }
@@ -217,7 +217,10 @@ public abstract class AbstractProtoService implements PushMessageCallback {
     }
 
     private void cancelHeartTimer(){
-        interval = 0;
+        interval--;
+        if(interval < -2){
+            interval = -2;
+        }
         if(heartbeatTimer != null){
             alarmWrapper.cancel(heartbeatTimer);
         }
@@ -238,7 +241,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         if(heartbeatTimer != null){
             alarmWrapper.cancel(heartbeatTimer);
         }
-        long current = (30 + 30 * interval) * 1000;
+        long current = (120 + 30 * interval) * 1000;
         log.i("try send heartbeat interval "+current);
         sendHeartbeat(current);
     }
@@ -288,9 +291,9 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         scheduledExecutorService.execute(new Runnable() {
             @Override
             public void run() {
-                //messageid最大不超过4898,以为私有协议messageId最大只支持4898
+                //messageid最大不超过4898,以为私有协议messageId最大只支持65535
                 int messageId = PreferenceManager.getDefaultSharedPreferences(context).getInt("message_id",0);
-                if(messageId > 4898){
+                if(messageId > 65535){
                     messageId = 0;
                 }
                 log.i("sendMessage send signal "+signal+" subSignal "+subSignal+" messageId "+messageId);
@@ -302,7 +305,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
                 }
 
                 int finalMessageId = messageId;
-                alarmWrapper.schedule(new Timer.Builder().period(6 * 1000)
+                alarmWrapper.schedule(new Timer.Builder().period(3 * 1000)
                         .wakeup(true)
                         .action(new Runnable() {
                             @Override
