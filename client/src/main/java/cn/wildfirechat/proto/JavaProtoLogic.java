@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import cn.wildfirechat.alarm.AlarmWrapper;
+import cn.wildfirechat.message.core.MessageStatus;
 import cn.wildfirechat.model.ProtoChannelInfo;
 import cn.wildfirechat.model.ProtoChatRoomInfo;
 import cn.wildfirechat.model.ProtoChatRoomMembersInfo;
@@ -396,7 +397,9 @@ public class JavaProtoLogic {
 
     public static void clearMessages(int conversationType, String target, int line){}
 
-    public static void setMediaMessagePlayed(long messageId){}
+    public static void setMediaMessagePlayed(long messageId){
+       protoService.getImMemoryStore().updateMessageStatus(messageId, MessageStatus.Played.ordinal());
+    }
 
     public static void removeConversation(int conversationType, String target, int line, boolean clearMsg){
         protoService.getImMemoryStore().removeConversation(conversationType,target,line,clearMsg);
