@@ -152,7 +152,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnected);
         cancelReconnectTimer();
         sendConnectMessage();
-        schedule();
+        sendHeartbeat((120 + 30 * interval) * 1000);
     }
 
     public void reconnect(){
