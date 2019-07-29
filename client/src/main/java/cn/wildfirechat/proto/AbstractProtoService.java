@@ -2,6 +2,7 @@ package cn.wildfirechat.proto;
 
 import android.content.Context;
 import android.preference.PreferenceManager;
+import android.renderscript.ScriptIntrinsicYuvToRGB;
 import android.text.TextUtils;
 
 import com.alibaba.fastjson.JSON;
@@ -76,13 +77,14 @@ public abstract class AbstractProtoService implements PushMessageCallback {
     private volatile boolean userDisconnect = false;
     private int reconnectNum = 0;
     private AlarmWrapper alarmWrapper;
+    private HeartbeatManager heartbeatManager;
     Timer heartbeatTimer;
     Timer reconnectTimer;
-    int interval = 0;
 
     public AbstractProtoService(Context context,AlarmWrapper alarmWrapper){
         this.alarmWrapper = alarmWrapper;
         this.context = context;
+        this.heartbeatManager = new HeartbeatManager();
     }
 
     public void connect(String host, int shortPort){
@@ -127,6 +129,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
     public void receiveException(Exception e) {
         log.e("comsince receive exception ",e);
         JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusUnconnected);
+        heartbeatManager.reportException();
         cancelHeartTimer();
         if(!userDisconnect && reconnectNum <= 3){
             log.i("reconnect num "+reconnectNum);
@@ -152,7 +155,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusConnected);
         cancelReconnectTimer();
         sendConnectMessage();
-        sendHeartbeat((120 + 30 * interval) * 1000);
+        sendHeartbeat(heartbeatManager.currentHeartInterval());
     }
 
     public void reconnect(){
@@ -201,33 +204,21 @@ public abstract class AbstractProtoService implements PushMessageCallback {
     }
 
     private void schedule(){
+        heartbeatManager.reportHeartbeatScheduleTime(System.currentTimeMillis());
         alarmWrapper.schedule(heartbeatTimer =
-                new Timer.Builder().period((120 + 30 * interval) * 1000)
+                new Timer.Builder().period(heartbeatManager.currentHeartInterval())
                         .wakeup(true)
                         .action(new Runnable() {
                             @Override
                             public void run() {
-                                long current = (120 + 30 * ++interval) * 1000;
-                                if(current > 8 * 60 * 1000){
-                                    current = 8 * 60 * 1000;
-                                    interval = 12;
-                                }
-                                sendHeartbeat(current);
+                                sendHeartbeat(heartbeatManager.nextHeartbeatInterval());
                             }
                         }).build());
     }
 
     private void cancelHeartTimer(){
-        decreaseHeartTimer();
         if(heartbeatTimer != null){
             alarmWrapper.cancel(heartbeatTimer);
-        }
-    }
-
-    private void decreaseHeartTimer(){
-        interval--;
-        if(interval < -2){
-            interval = -2;
         }
     }
 
@@ -246,7 +237,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         if(heartbeatTimer != null){
             alarmWrapper.cancel(heartbeatTimer);
         }
-        long current = (120 + 30 * interval) * 1000;
+        long current = heartbeatManager.currentHeartInterval();
         log.i("try send heartbeat interval "+current);
         sendHeartbeat(current);
     }
@@ -257,6 +248,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
             @Override
             public void onSuccess() {
                 log.i("send heartbeat interval "+interval+" success");
+                heartbeatManager.reportHeartbeatSendSuccessTime(System.currentTimeMillis());
                 schedule();
             }
 
@@ -264,7 +256,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
             public void onFailure(int errorCode) {
                 log.i("send heartbeat error");
                 //降低heartbeat间隔
-                decreaseHeartTimer();
+                heartbeatManager.reportHeartbeatExceptionTime(System.currentTimeMillis());
             }
         });
     }
