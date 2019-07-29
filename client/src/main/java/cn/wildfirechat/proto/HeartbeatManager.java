@@ -33,8 +33,12 @@ public class HeartbeatManager {
         this.currentExceptionTime = exceptionTime;
         if(currentExceptionTime != 0 && currentScheduleTime != 0 && currentExceptionTime > currentScheduleTime){
             long interval = currentExceptionTime - currentScheduleTime;
-            currentMaxHeartbeatInterval = interval - 30 * 1000;
-            searchingMaxInterval = false;
+            if(interval > currentMaxHeartbeatInterval){
+                currentMaxHeartbeatInterval = interval - 60 * 1000;
+                searchingMaxInterval = false;
+            } else {
+                currentMaxHeartbeatInterval = interval - 30 * 1000;
+            }
         } else {
             currentMaxHeartbeatInterval -= 30 * 1000;
         }
@@ -71,8 +75,13 @@ public class HeartbeatManager {
     private void recalculateMaxHeartbeatInterval(){
         if(currentSendSuccessTime != 0 && currentScheduleTime != 0){
             long interval = currentSendSuccessTime - currentScheduleTime;
-            if(interval > currentMaxHeartbeatInterval){
-                currentMaxHeartbeatInterval = interval;
+            if(searchingMaxInterval){
+                if(interval > currentMaxHeartbeatInterval){
+                    currentMaxHeartbeatInterval = interval;
+                }
+                if(interval > maxHeartbeatInterval){
+                    currentMaxHeartbeatInterval = maxHeartbeatInterval;
+                }
             }
             logger.i("real interval "+interval+" current heart interval "+currentHeartbeatInterval+" max interval "+currentMaxHeartbeatInterval);
         }
