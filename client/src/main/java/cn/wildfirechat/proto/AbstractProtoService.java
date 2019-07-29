@@ -210,6 +210,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
                                 long current = (120 + 30 * ++interval) * 1000;
                                 if(current > 8 * 60 * 1000){
                                     current = 8 * 60 * 1000;
+                                    interval = 12;
                                 }
                                 sendHeartbeat(current);
                             }
@@ -217,12 +218,16 @@ public abstract class AbstractProtoService implements PushMessageCallback {
     }
 
     private void cancelHeartTimer(){
+        decreaseHeartTimer();
+        if(heartbeatTimer != null){
+            alarmWrapper.cancel(heartbeatTimer);
+        }
+    }
+
+    private void decreaseHeartTimer(){
         interval--;
         if(interval < -2){
             interval = -2;
-        }
-        if(heartbeatTimer != null){
-            alarmWrapper.cancel(heartbeatTimer);
         }
     }
 
@@ -258,6 +263,8 @@ public abstract class AbstractProtoService implements PushMessageCallback {
             @Override
             public void onFailure(int errorCode) {
                 log.i("send heartbeat error");
+                //降低heartbeat间隔
+                decreaseHeartTimer();
             }
         });
     }
