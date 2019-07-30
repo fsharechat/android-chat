@@ -129,7 +129,6 @@ public abstract class AbstractProtoService implements PushMessageCallback {
     public void receiveException(Exception e) {
         log.e("comsince receive exception ",e);
         JavaProtoLogic.onConnectionStatusChanged(ConnectionStatusUnconnected);
-        heartbeatManager.reportException();
         cancelHeartTimer();
         if(!userDisconnect && reconnectNum <= 3){
             log.i("reconnect num "+reconnectNum);
