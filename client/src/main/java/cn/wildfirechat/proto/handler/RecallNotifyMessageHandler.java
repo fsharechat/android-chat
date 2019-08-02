@@ -36,13 +36,14 @@ public class RecallNotifyMessageHandler extends AbstractMessageHandler{
                 public void run() {
 
                     ProtoMessage updateProtoMessage = protoService.getMessageByUid(messageUid);
-                    RecallMessageContent recallMessageContent = new RecallMessageContent(operatorId, messageUid);
-                    MessagePayload payload = recallMessageContent.encode();
-                    payload.contentType = recallMessageContent.getClass().getAnnotation(ContentTag.class).type();
-                    updateProtoMessage.setContent(payload.toProtoContent());
-                    protoService.updateMessageContent(updateProtoMessage);
-                    JavaProtoLogic.onRecallMessage(messageUid);
-
+                    if(updateProtoMessage !=  null){
+                        RecallMessageContent recallMessageContent = new RecallMessageContent(operatorId, messageUid);
+                        MessagePayload payload = recallMessageContent.encode();
+                        payload.contentType = recallMessageContent.getClass().getAnnotation(ContentTag.class).type();
+                        updateProtoMessage.setContent(payload.toProtoContent());
+                        protoService.updateMessageContent(updateProtoMessage);
+                        JavaProtoLogic.onRecallMessage(messageUid);
+                    }
                 }
             });
         } catch (InvalidProtocolBufferException e) {

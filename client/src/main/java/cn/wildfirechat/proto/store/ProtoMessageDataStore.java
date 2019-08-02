@@ -328,7 +328,8 @@ class ProtoMessageDataStore extends SqliteDatabaseStore{
             ProtoMessage updateProtoMessage = getMessage(protoMessageId);
             if(updateProtoMessage != null){
                 updateProtoMessage.setMessageUid(messageUid);
-                ContentValues contentValues = new ContentValues(1);
+                ContentValues contentValues = new ContentValues(2);
+                contentValues.put(COLUMN_MESSAGE_UID,messageUid);
                 contentValues.put(COLUMN_MESSAGE_DATA,serialize(updateProtoMessage));
                 retval = database.update(ChatStoreHelper.TABLE_MESSAGES,contentValues,COLUMN_MESSAGE_ID + "=" + protoMessageId,null);
                 logger.i("update protomessage uid "+messageUid);
