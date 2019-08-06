@@ -245,13 +245,14 @@ public class ProtoService extends AbstractProtoService {
 
         //文件类型先上传到云
         String localMediaPath = msg.getContent().getLocalMediaPath();
-        log.i("messageId "+msg.getMessageId()+" local media path "+localMediaPath+" mediaType "+msg.getContent().getMediaType());
+        String remoteMediaPath = msg.getContent().getRemoteMediaUrl();
+        log.i("messageId "+msg.getMessageId()+" local media path "+localMediaPath+" mediaType "+msg.getContent().getMediaType()+" remoteUrl "+remoteMediaPath);
         //注意这里的位置，不要随意调换有可能影响语音通话
         long protoMessageId = MessageShardingUtil.generateId();
         msg.setMessageId(protoMessageId);
         msg.setStatus(MessageStatus.Sending.value());
         callback.onPrepared(protoMessageId,System.currentTimeMillis());
-        if(!TextUtils.isEmpty(localMediaPath)){
+        if(!TextUtils.isEmpty(localMediaPath) && TextUtils.isEmpty(remoteMediaPath)){
             uploadMedia(localMediaPath, msg.getContent().getMediaType(), new JavaProtoLogic.IUploadMediaCallback() {
                 @Override
                 public void onSuccess(String remoteUrl) {
