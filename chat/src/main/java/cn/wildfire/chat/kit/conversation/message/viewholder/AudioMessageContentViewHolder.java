@@ -82,7 +82,7 @@ public class AudioMessageContentViewHolder extends MediaMessageContentViewHolder
         }
 
         // 下载完成，开始播放
-        if (message.progress == 100) {
+        if (message.progress == 100 && message.message.direction == MessageDirection.Receive) {
             message.progress = 0;
             itemView.post(() -> {
                 conversationViewModel.playAudioMessage(message);
