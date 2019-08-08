@@ -91,7 +91,7 @@ public class FloatingVoipService extends Service {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId);
 
         builder.setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("通话中...")
+                .setContentTitle(notificationTitle(session.getState()))
                 .setContentIntent(pendingIntent)
                 .setOngoing(true)
                 .build();
@@ -102,6 +102,21 @@ public class FloatingVoipService extends Service {
             e.printStackTrace();
         }
         return START_NOT_STICKY;
+    }
+
+    private String notificationTitle(AVEngineKit.CallState callState){
+        String title = "空闲";
+        switch (callState){
+            case Incoming:
+                title = "等待接听";
+                break;
+            case Outgoing:
+                title = "正在呼叫";
+                break;
+            default:
+                break;
+        }
+        return title;
     }
 
     @Override
@@ -136,11 +151,16 @@ public class FloatingVoipService extends Service {
         view = LayoutInflater.from(this).inflate(R.layout.av_voip_float_view, null);
         view.setOnTouchListener(onTouchListener);
         wm.addView(view, params);
-        if (session.isAudioOnly()) {
-            showAudioInfo();
+        if(session.getState() != AVEngineKit.CallState.Connected){
+            showCallingInfo();
         } else {
-            showVideoInfo();
+            if (session.isAudioOnly()) {
+                showAudioInfo();
+            } else {
+                showVideoInfo();
+            }
         }
+
         session.setCallback(new AVEngineKit.CallSessionCallback() {
             @Override
             public void didCallEndWithReason(AVEngineKit.CallEndReason reason) {
@@ -181,6 +201,23 @@ public class FloatingVoipService extends Service {
 
     public void hideFloatBox() {
         stopSelf();
+    }
+
+    private void showCallingInfo() {
+        FrameLayout remoteVideoFrameLayout = view.findViewById(R.id.remoteVideoFrameLayout);
+        if (remoteVideoFrameLayout.getVisibility() == View.VISIBLE) {
+            session.setupRemoteVideo(null, SCALE_ASPECT_BALANCED);
+            remoteVideoFrameLayout.setVisibility(View.GONE);
+            wm.removeView(view);
+            wm.addView(view, params);
+//            wm.updateViewLayout(view, params);
+        }
+
+        view.findViewById(R.id.audioLinearLayout).setVisibility(View.VISIBLE);
+        TextView timeV = view.findViewById(R.id.durationTextView);
+        ImageView mediaIconV = view.findViewById(R.id.av_media_type);
+        mediaIconV.setImageResource(R.drawable.av_float_audio);
+        timeV.setText(notificationTitle(session.getState()));
     }
 
     private void showAudioInfo() {

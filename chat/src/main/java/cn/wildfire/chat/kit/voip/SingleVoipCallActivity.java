@@ -210,6 +210,11 @@ public class SingleVoipCallActivity extends FragmentActivity implements AVEngine
         }
     }
 
+    @Override
+    public void onBackPressed() {
+        showFloatingView();
+    }
+
     public AVEngineKit getEngineKit() {
         return gEngineKit;
     }
