@@ -5,11 +5,13 @@
 
 # 飞享
 
+![image](http://image.comsince.cn/fx-chat.png)
+
 **NOTE:** 本项目为`飞享`即时通讯系统的Android客户端
 
 ## 适合快速部署的聊天系统
 这是一个聊天系统的简单架构，解决大量用户需要即时通讯的解决方案，基于RPC框架Dubbo,SpringBoot构建微服务应用，提供Docker快速部署的解决方案。
-提供Android客户端类似微信功能，包括`好友添加`，`私聊`，`群聊`，等基本功能
+提供Android客户端,Web客户端类似微信功能，包括`好友添加`，`私聊`，`群聊`，`一对一音视频通话`等基本功能
 
 ### 架构图
 
@@ -23,10 +25,11 @@
 ![image](http://image.comsince.cn/chat-show.gif)
 
 > __<font color="#dd0000">扫码体验APK下载</font>__
-push-universe.png
+
 ![image](http://image.comsince.cn/qr-chat.png)
 
 **NOTE:** 本apk基于[android-chat](https://github.com/comsince/android-chat)构建替换为java协议栈开发
+
 * 请选择其中任何一个帐号密码进行登录即可
 ```properties
 帐号：13800000000, 13800000001, 13800000002
@@ -150,3 +153,15 @@ kubectl apply -f ./universe-kube-deployment.yml
 此项目时在参考其他项目基础上完成，在此表示感谢
 * [t-io](https://github.com/tywo45/t-io)
 * [wildfirechat](https://gitee.com/wildfirechat/server)
+
+## 一次性赞助
+
+是采用 MIT 许可的开源项目，个人使用完全免费。但是随着项目的增长，也需要相应的资金支持，你可以通过以下方式来赞助此项目
+
+| 支付宝      | 微信| 
+| :--------: | :--------:| 
+|<img src="http://image.comsince.cn/zfb-purse.png" alt="图片替换文本" width="300" height="300" align="center" />|<img src="http://image.comsince.cn/wx-purse.png" alt="图片替换文本" width="300" height="300" align="center" />|
+
+## 永久授权
+
+如果公司采用本项目，需要二次开发，可以申请软件授权，收取一次性费用，可以提供6个月的技术支持，联系QQ：`1282212195`
