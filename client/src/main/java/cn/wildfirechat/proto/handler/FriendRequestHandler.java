@@ -54,7 +54,7 @@ public class FriendRequestHandler extends AbstractMessageHandler {
 
     private ProtoFriendRequest convertProtoFriendRequest(WFCMessage.FriendRequest friendRequest){
         ProtoFriendRequest protoFriendRequest = new ProtoFriendRequest();
-        protoFriendRequest.setTarget(friendRequest.getToUid());
+        protoFriendRequest.setTarget(friendRequest.getFromUid());
         protoFriendRequest.setReason(friendRequest.getReason());
         protoFriendRequest.setStatus(friendRequest.getStatus());
         return protoFriendRequest;

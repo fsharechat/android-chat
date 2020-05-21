@@ -23,7 +23,7 @@ public class MyApp extends BaseApp {
         // bugly，务必替换为你自己的!!!
         CrashReport.initCrashReport(getApplicationContext(), "34490ba79f", false);
         // 只在主进程初始化
-        if (getCurProcessName(this).equals("cn.wildfirechat.chat")) {
+        if (getCurProcessName(this).equals("cn.comsince.fschat")) {
             wfcUIKit = new WfcUIKit();
             wfcUIKit.init(this);
             MessageViewHolderManager.getInstance().registerMessageViewHolder(LocationMessageContentViewHolder.class);

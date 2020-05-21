@@ -13,10 +13,10 @@ android {
     aaptOptions.cruncherEnabled = false
     aaptOptions.useNewCruncher = false
     defaultConfig {
-        applicationId "cn.wildfirechat.chat"
+        applicationId "cn.comsince.fschat"
         minSdkVersion 16
         targetSdkVersion 28 //当targetversion大于23时，需要使用fileprovider
-        versionCode 814
+        versionCode 815
         versionName "0.8.1"
         multiDexEnabled true
         javaCompileOptions {
@@ -25,7 +25,7 @@ android {
             }
         }
         manifestPlaceholders = [
-                APP_ID       : "cn.wildfirechat.chat",
+                APP_ID       : "cn.comsince.fschat",
 
                 MI_APP_ID    : "2882303761517722456",
                 MI_APP_KEY   : "5731772292456",
