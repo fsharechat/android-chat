@@ -29,9 +29,13 @@ public class GroupInfoHandler extends AbstractMessageHandler{
         if(errorCode == 0){
             try {
                 WFCMessage.PullGroupInfoResult pullGroupInfoResult = WFCMessage.PullGroupInfoResult.parseFrom(byteBufferList.getAllByteArray());
-                WFCMessage.GroupInfo groupInfo = pullGroupInfoResult.getInfo(0);
-                ProtoGroupInfo protoGroupInfo = convert2ProGroupInfo(groupInfo);
-                protoService.getImMemoryStore().addGroupInfo(groupInfo.getTargetId(),protoGroupInfo,true);
+                ProtoGroupInfo protoGroupInfo = null;
+                if(pullGroupInfoResult != null && pullGroupInfoResult.getSerializedSize() > 0){
+                    WFCMessage.GroupInfo groupInfo = pullGroupInfoResult.getInfo(0);
+                    protoGroupInfo = convert2ProGroupInfo(groupInfo);
+                    protoService.getImMemoryStore().addGroupInfo(groupInfo.getTargetId(),protoGroupInfo,true);
+                }
+
                 protoGroupInfoSimpleFuture.setComplete(protoGroupInfo);
             } catch (InvalidProtocolBufferException e) {
                 e.printStackTrace();
