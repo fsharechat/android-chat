@@ -153,15 +153,3 @@ kubectl apply -f ./universe-kube-deployment.yml
 此项目时在参考其他项目基础上完成，在此表示感谢
 * [t-io](https://github.com/tywo45/t-io)
 * [wildfirechat](https://gitee.com/wildfirechat/server)
-
-## 一次性赞助
-
-是采用 MIT 许可的开源项目，个人使用完全免费。但是随着项目的增长，也需要相应的资金支持，你可以通过以下方式来赞助此项目
-
-| 支付宝      | 微信| 
-| :--------: | :--------:| 
-|<img src="http://image.comsince.cn/zfb-purse.png" alt="图片替换文本" width="300" height="300" align="center" />|<img src="http://image.comsince.cn/wx-purse.png" alt="图片替换文本" width="300" height="300" align="center" />|
-
-## 永久授权
-
-如果公司采用本项目，需要二次开发，可以申请软件授权，收取一次性费用，可以提供6个月的技术支持，联系QQ：`1282212195`
