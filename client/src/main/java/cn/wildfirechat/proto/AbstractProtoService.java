@@ -2,7 +2,6 @@ package cn.wildfirechat.proto;
 
 import android.content.Context;
 import android.preference.PreferenceManager;
-import android.renderscript.ScriptIntrinsicYuvToRGB;
 import android.text.TextUtils;
 
 import com.alibaba.fastjson.JSON;
@@ -12,12 +11,17 @@ import com.comsince.github.core.ByteBufferList;
 import com.comsince.github.core.future.SimpleFuture;
 import com.comsince.github.logger.Log;
 import com.comsince.github.logger.LoggerFactory;
+import com.comsince.github.proto.FSCMessage;
 import com.comsince.github.push.Header;
 import com.comsince.github.push.Signal;
 import com.comsince.github.push.SubSignal;
 import com.comsince.github.push.util.AES;
 import com.comsince.github.push.util.Base64;
 import com.google.protobuf.ByteString;
+import com.koushikdutta.async.http.AsyncHttpClient;
+import com.koushikdutta.async.http.AsyncHttpPut;
+import com.koushikdutta.async.http.AsyncHttpResponse;
+import com.koushikdutta.async.http.body.FileBody;
 import com.qiniu.android.http.ResponseInfo;
 import com.qiniu.android.storage.UpCompletionHandler;
 import com.qiniu.android.storage.UpProgressHandler;
@@ -26,7 +30,7 @@ import com.qiniu.android.storage.UploadOptions;
 
 import org.json.JSONObject;
 
-import java.lang.reflect.Array;
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -46,9 +50,13 @@ import cn.wildfirechat.model.ProtoMessageContent;
 import cn.wildfirechat.model.ProtoUserInfo;
 import cn.wildfirechat.proto.handler.MessageHandler;
 import cn.wildfirechat.proto.handler.RequestInfo;
+import cn.wildfirechat.proto.upload.ByteBody;
 import cn.wildfirechat.proto.model.ConnectMessage;
+import cn.wildfirechat.proto.model.MinioMessage;
 import cn.wildfirechat.proto.model.QiuTokenMessage;
 import cn.wildfirechat.proto.store.ImMemoryStore;
+import cn.wildfirechat.proto.upload.FileProgressBody;
+import cn.wildfirechat.proto.upload.UploadProgressPercentHandler;
 
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusConnected;
 import static cn.wildfirechat.client.ConnectionStatus.ConnectionStatusConnecting;
@@ -68,6 +76,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
     private AndroidNIOClient androidNIOClient;
     protected ImMemoryStore imMemoryStore;
     UploadManager uploadManager;
+    boolean userQiniu = false;
 
     public ConcurrentHashMap<Integer, RequestInfo> requestMap = new ConcurrentHashMap<>();
     public ConcurrentHashMap<Integer, SimpleFuture> futureMap = new ConcurrentHashMap<>();
@@ -367,56 +376,113 @@ public abstract class AbstractProtoService implements PushMessageCallback {
 
 
     public void uploadMedia(byte[] data, int mediaType, JavaProtoLogic.IUploadMediaCallback callback){
-        QiuTokenMessage qiuTokenMessage = getQiniuUploadToken(mediaType);
-        if(qiuTokenMessage != null){
-            String token = qiuTokenMessage.getToken();
-            String domain = qiuTokenMessage.getDomain();
-            String key = mediaType+"-"+getUserName()+"-"+System.currentTimeMillis();
-            log.i("upload media type "+mediaType +" token "+token +" domain "+domain+" key "+key);
+        if(userQiniu){
+            QiuTokenMessage qiuTokenMessage = getQiniuUploadToken(mediaType);
+            if(qiuTokenMessage != null){
+                String token = qiuTokenMessage.getToken();
+                String domain = qiuTokenMessage.getDomain();
+                String key = mediaType+"-"+getUserName()+"-"+System.currentTimeMillis();
+                log.i("upload media type "+mediaType +" token "+token +" domain "+domain+" key "+key);
 
-            uploadManager.put(data, key, token, new UpCompletionHandler() {
-                @Override
-                public void complete(String key, ResponseInfo info, JSONObject response) {
-                    log.i("key "+key+" info "+info );
-                    if(info.statusCode == 200){
-                        callback.onSuccess(domain+key);
-                    } else {
-                        callback.onFailure(ErrorCode.FILE_NOT_EXIST);
+                uploadManager.put(data, key, token, new UpCompletionHandler() {
+                    @Override
+                    public void complete(String key, ResponseInfo info, JSONObject response) {
+                        log.i("key "+key+" info "+info );
+                        if(info.statusCode == 200){
+                            callback.onSuccess(domain+key);
+                        } else {
+                            callback.onFailure(ErrorCode.FILE_NOT_EXIST);
+                        }
                     }
-                }
-            },null);
+                },null);
+            } else {
+                callback.onFailure(ErrorCode.SERVICE_EXCEPTION);
+            }
         } else {
-            callback.onFailure(ErrorCode.SERVICE_EXCEPTION);
+            String key = mediaType+"-"+getUserName()+"-"+System.currentTimeMillis()+".png";
+            MinioMessage minioMessage = getMinioMessage(mediaType,key);
+            if(minioMessage != null){
+                AsyncHttpPut asyncHttpPut = new AsyncHttpPut(minioMessage.getUrl());
+                ByteBody byteBody = new ByteBody(data);
+                asyncHttpPut.setBody(byteBody);
+                AsyncHttpClient.getDefaultInstance().executeString(asyncHttpPut, new AsyncHttpClient.StringCallback() {
+                    @Override
+                    public void onCompleted(Exception e, AsyncHttpResponse source, String result) {
+                        if(e != null){
+                            e.printStackTrace();
+                            callback.onFailure(ErrorCode.SERVICE_EXCEPTION);
+                        } else {
+                            callback.onSuccess(minioMessage.getDomain()+"/"+key);
+                        }
+                    }
+                });
+            } else {
+                callback.onFailure(ErrorCode.SERVICE_EXCEPTION);
+            }
         }
+
     }
 
     protected void uploadMedia(String data, int mediaType, JavaProtoLogic.IUploadMediaCallback callback){
-        QiuTokenMessage qiuTokenMessage = getQiniuUploadToken(mediaType);
-        if(qiuTokenMessage != null){
-            String token = qiuTokenMessage.getToken();
-            String domain = qiuTokenMessage.getDomain();
-            String key = mediaType+"-"+getUserName()+"-"+System.currentTimeMillis()+"-"+data;
-            log.i("upload media type "+mediaType +" token "+token +" domain "+domain+" key "+key);
+        if(userQiniu){
+            QiuTokenMessage qiuTokenMessage = getQiniuUploadToken(mediaType);
+            if(qiuTokenMessage != null){
+                String token = qiuTokenMessage.getToken();
+                String domain = qiuTokenMessage.getDomain();
+                String key = mediaType+"-"+getUserName()+"-"+System.currentTimeMillis()+"-"+data;
+                log.i("upload media type "+mediaType +" token "+token +" domain "+domain+" key "+key);
 
-            uploadManager.put(data, key, token, new UpCompletionHandler() {
-                @Override
-                public void complete(String key, ResponseInfo info, JSONObject response) {
-                    log.i("key "+key+" info "+info );
-                    if(info.statusCode == 200){
-                        callback.onSuccess(domain+key);
-                    } else {
-                        callback.onFailure(ErrorCode.FILE_NOT_EXIST);
+                uploadManager.put(data, key, token, new UpCompletionHandler() {
+                    @Override
+                    public void complete(String key, ResponseInfo info, JSONObject response) {
+                        log.i("key "+key+" info "+info );
+                        if(info.statusCode == 200){
+                            callback.onSuccess(domain+key);
+                        } else {
+                            callback.onFailure(ErrorCode.FILE_NOT_EXIST);
+                        }
                     }
-                }
-            },new UploadOptions(null, null, false, new UpProgressHandler() {
-                @Override
-                public void progress(String key, double percent) {
-                    log.i("upload key "+key+" percent "+percent);
-                    callback.onProgress((long) (100 * percent),100);
-                }
-            }, null));
+                },new UploadOptions(null, null, false, new UpProgressHandler() {
+                    @Override
+                    public void progress(String key, double percent) {
+                        log.i("upload key "+key+" percent "+percent);
+                        callback.onProgress((long) (100 * percent),100);
+                    }
+                }, null));
+            } else {
+                callback.onFailure(ErrorCode.SERVICE_EXCEPTION);
+            }
         } else {
-            callback.onFailure(ErrorCode.SERVICE_EXCEPTION);
+            File file = new File(data);
+            String key = mediaType+"-"+getUserName()+"-"+System.currentTimeMillis()+"-"+file.getName();
+            MinioMessage minioMessage = getMinioMessage(mediaType,key);
+            if(minioMessage != null){
+                log.i("get upload domain "+minioMessage.getDomain() +" url "+minioMessage.getUrl());
+                AsyncHttpPut asyncHttpPut = new AsyncHttpPut(minioMessage.getUrl());
+//                FileBody body = new FileBody(file);
+                FileProgressBody body = new FileProgressBody(file, new UploadProgressPercentHandler() {
+                    @Override
+                    public void progress(double percent) {
+//                        log.i("upload percent "+percent);
+                        callback.onProgress((long) (100 * percent),100);
+                    }
+                });
+                asyncHttpPut.setBody(body);
+                AsyncHttpClient.getDefaultInstance().executeString(asyncHttpPut, new AsyncHttpClient.StringCallback() {
+                    @Override
+                    public void onCompleted(Exception e, AsyncHttpResponse source, String result) {
+                        if(e != null){
+                            e.printStackTrace();
+                            callback.onFailure(ErrorCode.SERVICE_EXCEPTION);
+                        } else {
+                            callback.onSuccess(minioMessage.getDomain()+"/"+key);
+                        }
+                    }
+                });
+            } else {
+                callback.onFailure(ErrorCode.SERVICE_EXCEPTION);
+            }
+
         }
     }
 
@@ -432,6 +498,18 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         }
     }
 
+    private MinioMessage getMinioMessage(int mediaType, String key){
+        FSCMessage.GetMinioUploadUrlRequest.Builder builder = FSCMessage.GetMinioUploadUrlRequest.newBuilder();
+        builder.setType(mediaType);
+        builder.setKey(key);
+        SimpleFuture<MinioMessage> minioMessageSimpleFuture = sendMessageSync(Signal.PUBLISH,SubSignal.GMURL,builder.build().toByteArray());
+        try {
+            return minioMessageSimpleFuture.get(200,TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
 
     public ProtoUserInfo convertUser(WFCMessage.User user){

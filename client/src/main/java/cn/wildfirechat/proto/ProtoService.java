@@ -28,6 +28,7 @@ import cn.wildfirechat.proto.handler.ConnectAckMessageHandler;
 import cn.wildfirechat.proto.handler.CreateGroupHandler;
 import cn.wildfirechat.proto.handler.FriendPullHandler;
 import cn.wildfirechat.proto.handler.FriendRequestHandler;
+import cn.wildfirechat.proto.handler.GetMinioUploadUrlHandler;
 import cn.wildfirechat.proto.handler.GetUserInfoMessageHanlder;
 import cn.wildfirechat.proto.handler.GroupInfoHandler;
 import cn.wildfirechat.proto.handler.GroupMemberHandler;
@@ -90,6 +91,7 @@ public class ProtoService extends AbstractProtoService {
         messageHandlers.add(new RecallMessageHandler(this));
         messageHandlers.add(new RecallNotifyMessageHandler(this));
         messageHandlers.add(new RemoteMessageHandler(this));
+        messageHandlers.add(new GetMinioUploadUrlHandler(this));
     }
 
     public void searchUser(String keyword, JavaProtoLogic.ISearchUserCallback callback){
