@@ -44,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import cn.wildfirechat.ErrorCode;
 import cn.wildfirechat.alarm.AlarmWrapper;
 import cn.wildfirechat.alarm.Timer;
+import cn.wildfirechat.message.MessageContentMediaType;
 import cn.wildfirechat.message.core.MessageStatus;
 import cn.wildfirechat.model.ProtoMessage;
 import cn.wildfirechat.model.ProtoMessageContent;
@@ -454,7 +455,12 @@ public abstract class AbstractProtoService implements PushMessageCallback {
             }
         } else {
             File file = new File(data);
-            String key = mediaType+"-"+getUserName()+"-"+System.currentTimeMillis()+"-"+file.getName();
+            String name = file.getName();
+            if(mediaType == MessageContentMediaType.VOICE.getValue()){
+                //对于一些文件需要加后缀,不然无法下载
+                name = name +".amr";
+            }
+            String key = mediaType+"-"+getUserName()+"-"+System.currentTimeMillis()+"-"+name;
             MinioMessage minioMessage = getMinioMessage(mediaType,key);
             if(minioMessage != null){
                 log.i("get upload domain "+minioMessage.getDomain() +" url "+minioMessage.getUrl());
