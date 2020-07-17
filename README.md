@@ -22,11 +22,9 @@
 ### Android 客户端
 [android-chat](https://github.com/comsince/android-chat)客户端，基于java nio实现TCP长连接，使用自定义的二进制协议，全新的心跳设计，实现与web端消息同步，音视频通话等功能。
 
-![image](http://image.comsince.cn/chat-show.gif)
-
 > __<font color="#dd0000">扫码体验APK下载</font>__
 
-![image](http://image.comsince.cn/qr-chat.png)
+![image](https://media.comsince.cn/minio-bucket-image-name/1-373z3zNN-1594953226715-fshare-chat-apk-qrcode.png)
 
 **NOTE:** 本apk基于[android-chat](https://github.com/comsince/android-chat)构建替换为java协议栈开发
 
