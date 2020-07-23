@@ -35,7 +35,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -80,6 +83,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
     boolean userQiniu = false;
 
     public ConcurrentHashMap<Integer, RequestInfo> requestMap = new ConcurrentHashMap<>();
+    public ConcurrentHashMap<Long,Timer> timerMap = new ConcurrentHashMap<>();
     public ConcurrentHashMap<Integer, SimpleFuture> futureMap = new ConcurrentHashMap<>();
     protected List<MessageHandler> messageHandlers = new ArrayList<>();
     public ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
@@ -322,9 +326,16 @@ public abstract class AbstractProtoService implements PushMessageCallback {
                                 if(requestInfo != null && requestInfo.getCallback() != null && protoMessageId != 0){
                                     log.i("send message timeout");
                                     try {
-                                        Method onFailure = requestInfo.getType().getMethod("onFailure",int.class);
-                                        onFailure.invoke(requestInfo.getCallback(),ErrorCode.SERVICE_DIED);
-                                        imMemoryStore.updateMessageStatus(protoMessageId,MessageStatus.Send_Failure.ordinal());
+                                        if(requestInfo.getSubSignal() == SubSignal.MS){
+                                            //重新加入到请求队列
+                                            requestMap.put(finalMessageId,requestInfo);
+                                            saveProtoMessageIds();
+                                        } else {
+                                            Method onFailure = requestInfo.getType().getMethod("onFailure",int.class);
+                                            onFailure.invoke(requestInfo.getCallback(),ErrorCode.SERVICE_DIED);
+                                            imMemoryStore.updateMessageStatus(protoMessageId,MessageStatus.Send_Failure.ordinal());
+                                        }
+
                                         //如果发送失败，代表链接断开，需要重连
                                         forceConnect();
                                     } catch (NoSuchMethodException e) {
@@ -342,6 +353,85 @@ public abstract class AbstractProtoService implements PushMessageCallback {
 
             }
         });
+    }
+
+    protected void saveProtoMessageIds(){
+        Set<String> protoIdsSet = new HashSet<>();
+        for(RequestInfo requestInfo : requestMap.values()){
+           if(requestInfo.getSubSignal() == SubSignal.MS){
+               protoIdsSet.add(String.valueOf(requestInfo.getProtoMessageId()));
+           }
+        }
+        log.i("save proto messageIds "+protoIdsSet);
+        imMemoryStore.saveRequestProtoMessageIds(protoIdsSet);
+    }
+
+    protected void removeProtoMessageId(String protoMessageId){
+        Set<String> protoMessagesSet = imMemoryStore.getRequestProtoMessageIds();
+        protoMessagesSet.remove(protoMessageId);
+        imMemoryStore.saveRequestProtoMessageIds(protoMessagesSet);
+    }
+
+    protected void updateMessageStatus(){
+        Set<String> protoMessagesSet = imMemoryStore.getRequestProtoMessageIds();
+        log.i("update  protoMessageIds "+protoMessagesSet);
+        for(String protoMessageId : protoMessagesSet){
+            imMemoryStore.updateMessageStatus(Long.valueOf(protoMessageId),MessageStatus.Send_Failure.ordinal());
+        }
+    }
+
+    public void resendMessage(){
+        for(Map.Entry<Integer,RequestInfo> requestInfoEntry : requestMap.entrySet()){
+            int messageId = requestInfoEntry.getKey();
+            RequestInfo requestInfo = requestInfoEntry.getValue();
+            //remove send fail protoMessageId
+            removeProtoMessageId(String.valueOf(requestInfo.getProtoMessageId()));
+            if(requestInfo.getSignal() == Signal.PUBLISH && requestInfo.getSubSignal() == SubSignal.MS){
+                log.i("resendMessage send signal "+requestInfo.getSignal()+" subSignal "+requestInfo.getSubSignal()+" messageId "+messageId+" protoMessageID "+requestInfo.getProtoMessageId());
+                ProtoMessage protoMessage = imMemoryStore.getMessage(requestInfo.getProtoMessageId());
+                WFCMessage.Message wfcMessage = convertWFCMessage(protoMessage);
+                androidNIOClient.sendMessage(requestInfo.getSignal(), requestInfo.getSubSignal(),messageId, wfcMessage.toByteArray());
+                requestInfo.increaseRetryCount();
+                Timer timer = timerMap.get(requestInfo.getProtoMessageId());
+                if(timer != null){
+                    alarmWrapper.cancel(timer);
+                }
+                timer = timerMap.put(requestInfo.getProtoMessageId(),new Timer.Builder().period(5 * 1000)
+                        .wakeup(true)
+                        .action(new Runnable() {
+                            @Override
+                            public void run() {
+                                RequestInfo requestInfo = requestMap.remove(messageId);
+                                if(requestInfo != null && requestInfo.getCallback() != null){
+                                    log.i("resend message timeout");
+                                    try {
+                                        if(requestInfo.getRetryCount() > 3){
+                                            Method onFailure = requestInfo.getType().getMethod("onFailure",int.class);
+                                            onFailure.invoke(requestInfo.getCallback(),ErrorCode.SERVICE_DIED);
+                                            imMemoryStore.updateMessageStatus(requestInfo.getProtoMessageId(),MessageStatus.Send_Failure.ordinal());
+                                        } else {
+                                            log.i("reconnect for resend "+requestInfo.getRetryCount());
+                                            requestMap.put(messageId,requestInfo);
+                                            saveProtoMessageIds();
+                                        }
+
+                                        //如果发送失败，代表链接断开，需要重连
+                                        forceConnect();
+                                    } catch (NoSuchMethodException e) {
+                                        e.printStackTrace();
+                                    } catch (IllegalAccessException e) {
+                                        e.printStackTrace();
+                                    } catch (InvocationTargetException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                        }).build());
+                alarmWrapper.schedule(timer);
+
+            }
+        }
+        updateMessageStatus();
     }
 
     protected SimpleFuture sendMessageSync(Signal signal,SubSignal subSignal,byte[] message){

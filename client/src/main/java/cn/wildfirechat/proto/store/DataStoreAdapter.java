@@ -2,6 +2,7 @@ package cn.wildfirechat.proto.store;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import cn.wildfirechat.model.ProtoConversationInfo;
 import cn.wildfirechat.model.ProtoConversationSearchresult;
@@ -280,6 +281,16 @@ public class DataStoreAdapter implements ImMemoryStore{
 
     @Override
     public Map<String, String> getUserSettings(int scope) {
+        return null;
+    }
+
+    @Override
+    public void saveRequestProtoMessageIds(Set<String> protoMessageIds) {
+
+    }
+
+    @Override
+    public Set<String> getRequestProtoMessageIds() {
         return null;
     }
 

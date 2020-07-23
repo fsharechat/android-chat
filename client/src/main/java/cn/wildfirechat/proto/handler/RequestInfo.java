@@ -10,6 +10,7 @@ public class RequestInfo {
     private Object callback;
     private long protoMessageId;
     private String callbackParam;
+    private int retryCount = 0;
 
     public RequestInfo(Signal signal, SubSignal subSignal, Class type, Object callback) {
         this.signal = signal;
@@ -64,5 +65,17 @@ public class RequestInfo {
 
     public void setProtoMessageId(long protoMessageId) {
         this.protoMessageId = protoMessageId;
+    }
+
+    public int getRetryCount() {
+        return retryCount;
+    }
+
+    public void setRetryCount(int retryCount) {
+        this.retryCount = retryCount;
+    }
+
+    public void increaseRetryCount(){
+        this.retryCount += 1;
     }
 }

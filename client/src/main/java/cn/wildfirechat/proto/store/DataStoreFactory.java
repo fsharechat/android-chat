@@ -3,12 +3,16 @@ package cn.wildfirechat.proto.store;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.util.ArraySet;
+
 import com.comsince.github.logger.Log;
 import com.comsince.github.logger.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import cn.wildfirechat.model.Conversation;
 import cn.wildfirechat.model.GroupInfo;
@@ -34,6 +38,7 @@ public class DataStoreFactory implements ImMemoryStore{
     private SharedPreferences preferences;
 
     private static final String LAST_MESSAGE_SEQ = "last_message_seq";
+    private static final String REQUESt_PROMESSAGE_IDS = "request_protomessage_ids";
 
     public static ImMemoryStore getDataStore(Context context){
         if(dataStoreFactory == null){
@@ -406,8 +411,19 @@ public class DataStoreFactory implements ImMemoryStore{
     }
 
     @Override
+    public void saveRequestProtoMessageIds(Set<String> protoMessageIds) {
+        preferences.edit().putStringSet(REQUESt_PROMESSAGE_IDS,protoMessageIds).apply();
+    }
+
+    @Override
+    public Set<String> getRequestProtoMessageIds() {
+        return preferences.getStringSet(REQUESt_PROMESSAGE_IDS, Collections.EMPTY_SET);
+    }
+
+    @Override
     public void stop() {
         preferences.edit().putLong(LAST_MESSAGE_SEQ,0).apply();
+        preferences.edit().putStringSet(REQUESt_PROMESSAGE_IDS,Collections.EMPTY_SET).apply();
         memoryStore.stop();
         protoMessageDataStore.stop();
     }
