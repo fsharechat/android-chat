@@ -366,7 +366,7 @@ public abstract class AbstractProtoService implements PushMessageCallback {
         imMemoryStore.saveRequestProtoMessageIds(protoIdsSet);
     }
 
-    protected void removeProtoMessageId(String protoMessageId){
+    public void removeProtoMessageId(String protoMessageId){
         Set<String> protoMessagesSet = imMemoryStore.getRequestProtoMessageIds();
         protoMessagesSet.remove(protoMessageId);
         imMemoryStore.saveRequestProtoMessageIds(protoMessagesSet);
